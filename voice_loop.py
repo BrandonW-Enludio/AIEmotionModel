@@ -5,70 +5,304 @@ from silero_vad import load_silero_vad
 import queue
 import threading
 import time
+
 from stt import STTHandler
 from tts import TTSHandler
 from emotion import EmotionDetector
+from llm import LLMHandler
+
 
 class VoicePipeline:
     def __init__(self):
+
         self.vad_model = load_silero_vad()
+
         self.stt = STTHandler(model_size="small")
         self.emotion_detector = EmotionDetector()
+
+        self.llm = LLMHandler()
+
         self.tts = TTSHandler()
+
+        if torch.cuda.is_available():
+            print("\n========== GPU MEMORY ==========")
+            print(f"GPU: {torch.cuda.get_device_name(0)}")
+            print(f"VRAM Allocated: {torch.cuda.memory_allocated() / 1024**3:.2f} GB")
+            print(f"VRAM Reserved: {torch.cuda.memory_reserved() / 1024**3:.2f} GB")
+            print(f"VRAM Total: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB")
+            print("================================\n")
+        else:
+            print("CUDA not available. Running on CPU.")
+
         self.audio_queue = queue.Queue()
+
+        # User speech state
         self.is_speaking = False
         self.buffer = []
+
+        # Timing
+        self.speech_start_time = None
+        self.speech_end_time = None
+
         self.sample_rate = 16000
 
-        print("🎤 Full pipeline ready (VAD + STT + Emotion + TTS). Speak now...")
+        print(
+            "🎤 Full pipeline ready "
+            "(VAD + STT + Emotion + LLM + TTS)"
+        )
+
 
     def audio_callback(self, indata, frames, time_info, status):
-        self.audio_queue.put(indata[:, 0].astype(np.float32))
+        self.audio_queue.put(
+            indata[:, 0].astype(np.float32)
+        )
+
 
     def vad_worker(self):
-        while True:
-            try:
-                chunk = self.audio_queue.get(timeout=0.1)
-                speech_prob = self.vad_model(torch.from_numpy(chunk), self.sample_rate).item()
 
+        while True:
+
+            try:
+
+                chunk = self.audio_queue.get(timeout=0.1)
+
+                speech_prob = self.vad_model(
+                    torch.from_numpy(chunk),
+                    self.sample_rate
+                ).item()
+
+
+                # ----------------------------
+                # User is speaking
+                # ----------------------------
                 if speech_prob > 0.5:
+
                     if not self.is_speaking:
                         print("🟢 SPEECH STARTED")
+
+                        self.speech_start_time = time.time()
+
                         self.is_speaking = True
+
+
                     self.buffer.extend(chunk)
+
+
+                # ----------------------------
+                # User stopped speaking
+                # ----------------------------
                 else:
-                    if self.is_speaking and len(self.buffer) > 4000:  # Lowered for shorter utterances
-                        start_time = time.time()
-                        
-                        audio_np = np.array(self.buffer, dtype=np.float32)
-                        text = self.stt.transcribe(audio_np, self.sample_rate)
-                        print(f"📝 You said: {text}")
+
+                    if self.is_speaking and len(self.buffer) > 8000:
+
+
+                        self.speech_end_time = time.time()
+
+
+                        audio_np = np.array(
+                            self.buffer,
+                            dtype=np.float32
+                        )
+
+
+                        # ----------------------------
+                        # Speech to Text
+                        # ----------------------------
+                        stt_start = time.time()
+
+                        text = self.stt.transcribe(
+                            audio_np,
+                            self.sample_rate
+                        )
+
+                        stt_latency = time.time() - stt_start
+
+
+                        print(
+                            f"📝 You said: {text}"
+                        )
+
 
                         if text:
-                            emotion = self.emotion_detector.detect(text)
+
+
+                            # ----------------------------
+                            # Emotion Detection
+                            # ----------------------------
+                            emotion_start = time.time()
+
+                            emotion = self.emotion_detector.detect(
+                                text
+                            )
+
+                            emotion_latency = (
+                                time.time()
+                                -
+                                emotion_start
+                            )
+
+
+                            print(
+                                f"😶 Emotion: {emotion}"
+                            )
+
+
+                            # ----------------------------
+                            # LLM
+                            # ----------------------------
+                            llm_start = time.time()
+
+                            response = (
+                                self.llm.generate_response(
+                                    text,
+                                    emotion
+                                )
+                            )
+
+                            llm_latency = (
+                                time.time()
+                                -
+                                llm_start
+                            )
+
+
+                            print(
+                                f"🤖 Response: {response}"
+                            )
+
+
+                            # ----------------------------
+                            # TTS
+                            # ----------------------------
                             tts_start = time.time()
-                            self.tts.speak(text, emotion=emotion)
-                            tts_latency = time.time() - tts_start
-                            total_latency = time.time() - start_time
-                            print(f"⏱️ TTS latency: {tts_latency:.2f}s | Total latency: {total_latency:.2f}s")
+
+                            tts_result = self.tts.speak(
+                                response,
+                                emotion=emotion
+                            )
+
+                            tts_total_latency = (
+                                time.time()
+                                -
+                                tts_start
+                            )
+
+                            tts_generation_latency = (
+                                tts_result["generation_latency"]
+                            )
+
+                            tts_playback_latency = (
+                                tts_result["playback_latency"]
+                            )
+
+
+                            # ----------------------------
+                            # Final Metrics
+                            # ----------------------------
+
+                            response_start_latency = (
+                                stt_latency
+                                +
+                                emotion_latency
+                                +
+                                llm_latency
+                                +
+                                tts_generation_latency
+                            )
+
+
+                            end_to_end_latency = (
+                                time.time()
+                                -
+                                self.speech_start_time
+                            )
+
+
+                            print("\n========== PERFORMANCE ==========")
+
+                            print(
+                                f"🎤 Speech Recognition: "
+                                f"{stt_latency:.2f}s"
+                            )
+
+                            print(
+                                f"😶 Emotion Analysis: "
+                                f"{emotion_latency:.2f}s"
+                            )
+
+                            print(
+                                f"🤖 LLM Inference: "
+                                f"{llm_latency:.2f}s"
+                            )
+
+                            print(
+                                f"🗣️ TTS Generation: {tts_generation_latency:.2f}s"
+                            )
+                            
+                            print(
+                                f"▶️ Playback: {tts_playback_latency:.2f}s"
+                            )
+
+                            print(
+                                f"⚡ Response Start: "
+                                f"{response_start_latency:.2f}s"
+                            )
+
+                            print(
+                                f"🏁 End-to-End: "
+                                f"{end_to_end_latency:.2f}s"
+                            )
+                            
+
+
+                            print(
+                                "=================================\n"
+                            )
+
 
                         self.buffer = []
                         self.is_speaking = False
+
+
             except queue.Empty:
                 continue
 
-    def start(self):
-        threading.Thread(target=self.vad_worker, daemon=True).start()
 
-        with sd.InputStream(samplerate=self.sample_rate, channels=1, dtype='float32',
-                           blocksize=512, callback=self.audio_callback):
-            print("Listening... Press Ctrl+C to stop.")
+
+    def start(self):
+
+        threading.Thread(
+            target=self.vad_worker,
+            daemon=True
+        ).start()
+
+
+        with sd.InputStream(
+            samplerate=self.sample_rate,
+            channels=1,
+            dtype='float32',
+            blocksize=512,
+            callback=self.audio_callback
+        ):
+
+            print(
+                "Listening... Press Ctrl+C to stop."
+            )
+
             try:
+
                 while True:
                     time.sleep(0.1)
+
             except KeyboardInterrupt:
-                print("\nPipeline stopped.")
+
+                print(
+                    "\nPipeline stopped."
+                )
+
+
 
 if __name__ == "__main__":
+
     pipeline = VoicePipeline()
     pipeline.start()

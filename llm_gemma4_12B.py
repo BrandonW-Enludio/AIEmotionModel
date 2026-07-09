@@ -4,8 +4,8 @@ import time
 
 class LLMHandler:
     def __init__(self):
-        print("Loading Gemma 2 2B...")
-        model_name = "google/gemma-2-2b-it"
+        print("Loading Gemma-4-12B (4-bit)...")
+        model_name = "google/gemma-4-12B"
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         
@@ -16,34 +16,32 @@ class LLMHandler:
             quantization_config={"load_in_4bit": True},
             trust_remote_code=True
         )
-        print("✅ Gemma 2 2B loaded!")
+        print("✅ Gemma-4-12B loaded!")
 
     def generate_response(self, user_text: str, emotion: str = "neutral"):
         start_time = time.time()
         
-        prompt = f"""You are a policeman in training.
-        User emotion: {emotion}
-        User: "{user_text}"
-
-        Respond aggressively, concisely, and in character."""
+        prompt = f"""<start_of_turn>user
+You are an emotionally aware NPC in a game.
+User emotion: {emotion}
+User said: "{user_text}"
+<end_of_turn>
+<start_of_turn>model
+"""
 
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
         
         outputs = self.model.generate(
             **inputs,
-            max_new_tokens=50,
-            temperature=0.7,
+            max_new_tokens=120,
+            temperature=0.8,
+            top_p=0.9,
             do_sample=True,
             pad_token_id=self.tokenizer.eos_token_id
         )
         
-        # Decode ONLY the newly generated tokens
-        generated_tokens = outputs[0][inputs["input_ids"].shape[1]:]
-        
-        response = self.tokenizer.decode(
-            generated_tokens,
-            skip_special_tokens=True
-        ).strip()
+        response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        response = response.split("<start_of_turn>model")[-1].strip()
         
         latency = time.time() - start_time
         print(f"🤖 LLM latency: {latency:.2f}s")
