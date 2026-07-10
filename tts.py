@@ -80,8 +80,10 @@ class TTSHandler:
         emotion: str = "neutral",
         intensity: float = 1.0
     ):
-
         full_text = text
+        print("\n========== TTS INPUT DEBUG ==========")
+        print(text)
+        print("=====================================\n")
 
 
         # -----------------------------

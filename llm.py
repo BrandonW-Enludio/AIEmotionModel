@@ -1,51 +1,66 @@
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 import time
 
 class LLMHandler:
     def __init__(self):
-        print("Loading Gemma 2 2B...")
-        model_name = "google/gemma-2-2b-it"
+        print("Loading Qwen3 1.7B (more human-like mode)...")
+        model_name = "Qwen/Qwen3-1.7B"
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        
+
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.float16,
+            bnb_4bit_quant_type="nf4"
+        )
+
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
             device_map="auto",
+            quantization_config=bnb_config,
             torch_dtype=torch.float16,
-            quantization_config={"load_in_4bit": True},
             trust_remote_code=True
         )
-        print("✅ Gemma 2 2B loaded!")
 
-    def generate_response(self, user_text: str, emotion: str = "neutral"):
+        print("✅ Qwen3 1.7B loaded!")
+
+    def generate_response(self, user_text: str, voice_emotion="neu", emotion_confidence=0.0):
         start_time = time.time()
-        
-        prompt = f"""You are a criminal holding a hostage. You are a little confused and very angry.
-        User emotion: {emotion}
-        User: "{user_text}"
 
-        Respond aggressively, concisely, and in character."""
+        messages = [
+            {"role": "system", "content": "You are a friendly, natural NPC in a game. Speak like a real person — casual, warm, with a bit of personality. Use contractions. Keep responses short but human. One or two sentences max."},
+            {"role": "user", "content": f"Emotion: {voice_emotion}\nPlayer said: {user_text}"}
+        ]
 
-        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
-        
+        text = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True
+        )
+
+        inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
+
         outputs = self.model.generate(
             **inputs,
-            max_new_tokens=50,
-            temperature=0.7,
+            max_new_tokens=80,
+            temperature=0.85,          # Higher = more human variation
+            top_p=0.9,
             do_sample=True,
-            pad_token_id=self.tokenizer.eos_token_id
+            pad_token_id=self.tokenizer.pad_token_id,
+            eos_token_id=self.tokenizer.eos_token_id,
+            repetition_penalty=1.15    # Helps avoid repetition
         )
-        
-        # Decode ONLY the newly generated tokens
-        generated_tokens = outputs[0][inputs["input_ids"].shape[1]:]
-        
-        response = self.tokenizer.decode(
-            generated_tokens,
-            skip_special_tokens=True
-        ).strip()
-        
+
+        generated_tokens = outputs[0][inputs.input_ids.shape[1]:]
+        response = self.tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
+
+        # Clean
+        response = response.split("</think>")[-1].strip()
+
         latency = time.time() - start_time
+
         print(f"🤖 LLM latency: {latency:.2f}s")
-        
-        return response.strip()
+        print(f"🤖 NPC Response: {response}")
+
+        return response

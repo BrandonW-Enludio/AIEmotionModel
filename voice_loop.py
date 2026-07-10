@@ -8,8 +8,9 @@ import time
 
 from stt import STTHandler
 from tts import TTSHandler
-from emotion import EmotionDetector
+#from emotion import EmotionDetector
 from llm import LLMHandler
+from ser import SERHandler
 
 
 class VoicePipeline:
@@ -18,8 +19,8 @@ class VoicePipeline:
         self.vad_model = load_silero_vad()
 
         self.stt = STTHandler(model_size="small")
-        self.emotion_detector = EmotionDetector()
-
+        #self.emotion_detector = EmotionDetector()
+        self.ser = SERHandler()
         self.llm = LLMHandler()
 
         self.tts = TTSHandler()
@@ -127,13 +128,13 @@ class VoicePipeline:
 
 
                             # ----------------------------
-                            # Emotion Detection
+                            # Emotion Detection Text
                             # ----------------------------
                             emotion_start = time.time()
 
-                            emotion = self.emotion_detector.detect(
-                                text
-                            )
+                            #emotion = self.emotion_detector.detect(
+                            #    text
+                            #)
 
                             emotion_latency = (
                                 time.time()
@@ -142,21 +143,44 @@ class VoicePipeline:
                             )
 
 
-                            print(
-                                f"😶 Emotion: {emotion}"
+                            #print(
+                            #    f"😶 Emotion: {emotion}"
+                            #)
+                            
+                            # ----------------------------
+                            # Emotion Detection Speech
+                            # ----------------------------
+                            ser_result = self.ser.detect(
+                                audio_np,
+                                self.sample_rate
                             )
 
+                            voice_emotion = ser_result["emotion"]
+                            emotion_confidence = ser_result["confidence"]
+
+                            print(
+                                f"🎙️ Voice emotion: "
+                                f"{voice_emotion} "
+                                f"({emotion_confidence:.2f})"
+                            )
 
                             # ----------------------------
                             # LLM
                             # ----------------------------
                             llm_start = time.time()
 
-                            response = (
-                                self.llm.generate_response(
-                                    text,
-                                    emotion
-                                )
+                            #response for emotion detetion text
+                            #response = (
+                            #    self.llm.generate_response(
+                            #        text,
+                            #        emotion
+                            #    )
+                            #)
+                            
+                            response = self.llm.generate_response(
+                                user_text=text,
+                                voice_emotion=voice_emotion,
+                                emotion_confidence=emotion_confidence
                             )
 
                             llm_latency = (
@@ -175,10 +199,15 @@ class VoicePipeline:
                             # TTS
                             # ----------------------------
                             tts_start = time.time()
-
+                            
+                            # If Qwen gives only ... tts don't say anything
+                            if not response or len(response) < 5:
+                                print("⚠️ LLM returned no dialogue. Using fallback.")
+                                response = "I'm here. What can I do for you?"
+                            
                             tts_result = self.tts.speak(
                                 response,
-                                emotion=emotion
+                                emotion=voice_emotion
                             )
 
                             tts_total_latency = (
