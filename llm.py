@@ -21,7 +21,7 @@ class LLMHandler:
     def generate_response(self, user_text: str, emotion: str = "neutral"):
         start_time = time.time()
         
-        prompt = f"""You are a policeman in training.
+        prompt = f"""You are a criminal holding a hostage. You are a little confused and very angry.
         User emotion: {emotion}
         User: "{user_text}"
 
