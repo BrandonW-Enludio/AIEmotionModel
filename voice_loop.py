@@ -128,27 +128,7 @@ class VoicePipeline:
 
 
                             # ----------------------------
-                            # Emotion Detection Text
-                            # ----------------------------
-                            emotion_start = time.time()
-
-                            #emotion = self.emotion_detector.detect(
-                            #    text
-                            #)
-
-                            emotion_latency = (
-                                time.time()
-                                -
-                                emotion_start
-                            )
-
-
-                            #print(
-                            #    f"😶 Emotion: {emotion}"
-                            #)
-                            
-                            # ----------------------------
-                            # Emotion Detection Speech
+                            # Emotion Detection
                             # ----------------------------
                             ser_result = self.ser.detect(
                                 audio_np,
@@ -156,31 +136,24 @@ class VoicePipeline:
                             )
 
                             voice_emotion = ser_result["emotion"]
-                            emotion_confidence = ser_result["confidence"]
-
+                            voice_confidence = ser_result["confidence"]
+                            emotion_latency = ser_result["latency"]
+                            
                             print(
                                 f"🎙️ Voice emotion: "
                                 f"{voice_emotion} "
-                                f"({emotion_confidence:.2f})"
+                                f"({voice_confidence:.2f})"
                             )
 
                             # ----------------------------
                             # LLM
                             # ----------------------------
                             llm_start = time.time()
-
-                            #response for emotion detetion text
-                            #response = (
-                            #    self.llm.generate_response(
-                            #        text,
-                            #        emotion
-                            #    )
-                            #)
                             
                             response = self.llm.generate_response(
                                 user_text=text,
                                 voice_emotion=voice_emotion,
-                                emotion_confidence=emotion_confidence
+                                voice_confidence=voice_confidence
                             )
 
                             llm_latency = (
@@ -190,9 +163,9 @@ class VoicePipeline:
                             )
 
 
-                            print(
-                                f"🤖 Response: {response}"
-                            )
+                            #print(
+                            #    f"🤖 Response: {response}"
+                            #)
 
 
                             # ----------------------------
@@ -207,7 +180,8 @@ class VoicePipeline:
                             
                             tts_result = self.tts.speak(
                                 response,
-                                emotion=voice_emotion
+                                emotion=voice_emotion,
+                                intensity=voice_confidence
                             )
 
                             tts_total_latency = (

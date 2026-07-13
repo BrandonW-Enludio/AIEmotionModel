@@ -25,18 +25,50 @@ class LLMHandler:
 
         print("✅ Qwen3 1.7B loaded!")
 
-    def generate_response(self, user_text: str, voice_emotion="neu", emotion_confidence=0.0):
+    def generate_response(self, user_text: str, voice_emotion="neu", voice_confidence=0.0):
         start_time = time.time()
 
         messages = [
-            {"role": "system", "content": "You are a friendly, natural NPC in a game. Speak like a real person — casual, warm, with a bit of personality. Use contractions. Keep responses short but human. One or two sentences max."},
-            {"role": "user", "content": f"Emotion: {voice_emotion}\nPlayer said: {user_text}"}
+            {
+            "role": "system",
+            "content":
+            """
+            You are a friendly, natural NPC in a game.
+
+            Respond only with dialogue the character would say aloud.
+
+            Use the player's detected voice emotion as subtle context:
+            - Happy players should receive warmer, more energetic responses.
+            - Sad or fearful players should receive calmer, more supportive responses.
+            - Angry players should receive patient, de-escalating responses.
+            - Neutral players should receive normal conversational responses.
+
+            Emotion confidence indicates how much you should trust the emotion:
+            - High confidence: let it influence your tone more.
+            - Low confidence: keep your response more neutral.
+
+            Never mention emotions, confidence scores, or analysis.
+            Keep responses short: one or two sentences.
+            """
+            },
+            {
+                "role": "user",
+                "content":
+                f"""
+            Emotion: {voice_emotion}
+            Emotion confidence: {voice_confidence:.2f}
+
+            Player said:
+            {user_text}
+            """
+            }
         ]
 
         text = self.tokenizer.apply_chat_template(
             messages,
             tokenize=False,
-            add_generation_prompt=True
+            add_generation_prompt=True,
+            enable_thinking=False
         )
 
         inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
@@ -60,7 +92,7 @@ class LLMHandler:
 
         latency = time.time() - start_time
 
-        print(f"🤖 LLM latency: {latency:.2f}s")
-        print(f"🤖 NPC Response: {response}")
+        #print(f"🤖 LLM latency: {latency:.2f}s")
+        #print(f"🤖 NPC Response: {response}")
 
         return response
