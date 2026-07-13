@@ -33,3 +33,4 @@ Thumbs.db
 *.safetensors
 *.pth
 chatterbox/
+Qwen3-TTS-backup/
