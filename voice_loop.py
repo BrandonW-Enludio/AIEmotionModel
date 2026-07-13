@@ -49,7 +49,7 @@ class VoicePipeline:
 
         print(
             "🎤 Full pipeline ready "
-            "(VAD + STT + Emotion + LLM + TTS)"
+            "(VAD + STT + SER + LLM + TTS)"
         )
 
 
