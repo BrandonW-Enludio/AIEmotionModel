@@ -34,3 +34,4 @@ Thumbs.db
 *.pth
 chatterbox/
 Qwen3-TTS-backup/
+/chatterbox_stream_env
