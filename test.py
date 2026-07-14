@@ -1,189 +1,77 @@
-import time
-import torch
 import torchaudio as ta
+import torch
 import sounddevice as sd
-from chatterbox.tts_turbo import ChatterboxTurboTTS
+import re
+import queue
+import threading
+from chatterbox.tts import ChatterboxTTS
 
+model = ChatterboxTTS.from_pretrained(device="cuda")
 
-# -------------------------
-# Sentence buffer
-# -------------------------
+text = "Welcome to the world of streaming text-to-speech! This audio will be generated and played in real-time chunks. " \
+       "Each sentence will now start and end cleanly. This feels much more natural, doesn't it? " \
+       "We can add more sentences here for testing. " \
+       "The playback should now flow smoothly between sentences."
 
-class SentenceBuffer:
-    def __init__(self):
-        self.buffer = ""
+def split_into_sentences(text):
+    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+    return [s.strip() for s in sentences if s.strip()]
 
-    def add_text(self, text):
-        """
-        Add new incoming text.
-        Returns completed sentences.
-        """
+sentences = split_into_sentences(text)
 
-        self.buffer += text
+# Queue for audio chunks (sentence-level)
+audio_queue = queue.Queue(maxsize=3)  # Small buffer for smoother flow
+stop_event = threading.Event()
 
-        sentences = []
-
-        while True:
-            split_index = -1
-
-            for char in [".", "!", "?"]:
-                index = self.buffer.find(char)
-
-                if index != -1:
-                    if split_index == -1 or index < split_index:
-                        split_index = index
-
-            if split_index == -1:
+def playback_worker():
+    """Background thread that plays audio from the queue"""
+    while not stop_event.is_set():
+        try:
+            audio_np = audio_queue.get(timeout=0.5)
+            if audio_np is None:  # Sentinel value to stop
                 break
+            sd.play(audio_np, samplerate=model.sr)
+            sd.wait()  # Wait for this sentence to finish playing
+            audio_queue.task_done()
+        except queue.Empty:
+            continue
+    print("Playback thread stopped.")
 
-            sentence = self.buffer[:split_index + 1].strip()
+# Start playback thread
+playback_thread = threading.Thread(target=playback_worker, daemon=True)
+playback_thread.start()
 
-            if sentence:
-                sentences.append(sentence)
+print("Starting smooth sentence-aligned TTS with background playback...\n")
 
-            self.buffer = self.buffer[split_index + 1:].lstrip()
+audio_chunks = []  # Optional: for final save
 
-        return sentences
-
-    def flush(self):
-        """
-        Return remaining text.
-        """
-        if self.buffer.strip():
-            remaining = self.buffer.strip()
-            self.buffer = ""
-            return remaining
-
-        return None
-
-
-# -------------------------
-# Load Turbo
-# -------------------------
-
-print("Loading Chatterbox Turbo...")
-
-model = ChatterboxTurboTTS.from_pretrained(
-    device="cuda"
-)
-
-print("Model loaded.")
-
-
-# -------------------------
-# Fake streamed LLM output
-# -------------------------
-
-tokens = [
-    "Welcome ",
-    "back ",
-    "Brandon. ",
-    "I ",
-    "have ",
-    "finished ",
-    "testing ",
-    "the ",
-    "Chatterbox ",
-    "Turbo ",
-    "sentence ",
-    "buffer. ",
-    "This ",
-    "should ",
-    "generate ",
-    "audio ",
-    "while ",
-    "the ",
-    "LLM ",
-    "continues ",
-    "thinking!"
-]
-
-
-buffer = SentenceBuffer()
-
-audio_segments = []
-
-
-# -------------------------
-# Generate as sentences arrive
-# -------------------------
-
-for token in tokens:
-
-    sentences = buffer.add_text(token)
-
-    for sentence in sentences:
-
-        print("\nGenerating:")
-        print(sentence)
-
-        start = time.perf_counter()
-
+try:
+    for i, sentence in enumerate(sentences):
+        print(f"Generating sentence {i+1}/{len(sentences)}: {sentence}")
+        
+        # Generate full sentence (clean boundaries)
         audio = model.generate(sentence)
+        audio_np = audio.squeeze().cpu().numpy()
+        
+        # Put in queue for playback thread (non-blocking for generation)
+        audio_queue.put(audio_np)
+        audio_chunks.append(audio)
+        
+        print(f"Queued sentence {i+1} for playback\n")
 
-        torch.cuda.synchronize()
+    # Wait for queue to empty
+    audio_queue.join()
 
-        elapsed = time.perf_counter() - start
+except KeyboardInterrupt:
+    print("\nInterrupted by user.")
+finally:
+    # Stop playback thread cleanly
+    audio_queue.put(None)  # Sentinel
+    stop_event.set()
+    playback_thread.join(timeout=2.0)
 
-        print(
-            f"Generation: {elapsed:.3f}s"
-        )
-
-
-        print("Playing...")
-
-        sd.play(
-            audio.squeeze().cpu().numpy(),
-            model.sr,
-            blocking=True
-        )
-
-
-# Flush leftover text
-
-remaining = buffer.flush()
-
-if remaining:
-
-    print("\nGenerating final:")
-    print(remaining)
-
-    audio = model.generate(remaining)
-
-    #audio_segments.append(
-    #    audio.cpu()
-    #)
-    print("Playing...")
-
-    audio_np = (
-        audio
-        .squeeze()
-        .cpu()
-        .numpy()
-    )
-
-    sd.play(
-        audio_np,
-        samplerate=model.sr,
-        blocking=True
-    )
-
-# -------------------------
-# Combine output
-# -------------------------
-
-#final_audio = torch.cat(
-#    audio_segments,
-#    dim=-1
-#)
-
-
-#ta.save(
-#    "turbo_sentence_buffer.wav",
-#    final_audio,
-#    model.sr
-#)
-
-
-#print("\nSaved turbo_sentence_buffer.wav")
-print("Generation Completed")
+# Optional: Save complete audio
+if audio_chunks:
+    final_audio = torch.cat(audio_chunks, dim=-1)
+    ta.save("smooth_sentence_output.wav", final_audio, model.sr)
+    print("Full audio saved to smooth_sentence_output.wav")

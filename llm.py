@@ -72,7 +72,7 @@ class LLMHandler:
         )
 
         inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
-
+        
         outputs = self.model.generate(
             **inputs,
             max_new_tokens=80,
@@ -89,10 +89,5 @@ class LLMHandler:
 
         # Clean
         response = response.split("</think>")[-1].strip()
-
-        latency = time.time() - start_time
-
-        #print(f"🤖 LLM latency: {latency:.2f}s")
-        #print(f"🤖 NPC Response: {response}")
 
         return response

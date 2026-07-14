@@ -169,33 +169,26 @@ class VoicePipeline:
 
 
                             # ----------------------------
-                            # TTS
+                            # Async TTS
                             # ----------------------------
+
                             tts_start = time.time()
-                            
-                            # If Qwen gives only ... tts don't say anything
+
                             if not response or len(response) < 5:
                                 print("⚠️ LLM returned no dialogue. Using fallback.")
                                 response = "I'm here. What can I do for you?"
-                            
-                            tts_result = self.tts.speak(
+
+
+                            self.tts.speak_async(
                                 response,
-                                emotion=voice_emotion,
-                                intensity=voice_confidence
+                                emotion=voice_emotion
                             )
 
-                            tts_total_latency = (
-                                time.time()
-                                -
-                                tts_start
-                            )
 
-                            tts_generation_latency = (
-                                tts_result["generation_latency"]
-                            )
+                            tts_latency = time.time() - tts_start
 
-                            tts_playback_latency = (
-                                tts_result["playback_latency"]
+                            print(
+                                f"📤 Sent to TTS queue in {tts_latency:.3f}s"
                             )
 
 
@@ -209,8 +202,6 @@ class VoicePipeline:
                                 emotion_latency
                                 +
                                 llm_latency
-                                +
-                                tts_generation_latency
                             )
 
 
@@ -239,11 +230,7 @@ class VoicePipeline:
                             )
 
                             print(
-                                f"🗣️ TTS Generation: {tts_generation_latency:.2f}s"
-                            )
-                            
-                            print(
-                                f"▶️ Playback: {tts_playback_latency:.2f}s"
+                                f"🗣️ TTS queued: {tts_latency:.3f}s"
                             )
 
                             print(

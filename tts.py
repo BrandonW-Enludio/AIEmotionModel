@@ -1,113 +1,146 @@
-import re
 import torch
-from chatterbox.tts_turbo import ChatterboxTurboTTS
-import soundfile as sf
-import simpleaudio as sa
 import time
+import queue
+import threading
+import re
+
+import sounddevice as sd
+from chatterbox.tts_turbo import ChatterboxTurboTTS
 
 
 class TTSHandler:
-
     def __init__(self):
-
         print("Loading Chatterbox-Turbo...")
-
         self.tts = ChatterboxTurboTTS.from_pretrained(
             device="cuda" if torch.cuda.is_available() else "cpu"
         )
-
         self.sample_rate = self.tts.sr
-
         print("✅ Chatterbox-Turbo loaded!")
 
+        self.text_queue = queue.Queue()
+        self.audio_queue = queue.Queue(maxsize=6)   # Bigger buffer = smoother
 
-    def clean_text(self, text: str):
+        self.running = True
+        self.job_id = 0
 
+        threading.Thread(target=self.tts_worker, daemon=True).start()
+        threading.Thread(target=self.playback_worker, daemon=True).start()
+
+    def clean_text(self, text):
         clean_text = text.strip()
-
         for marker in ["Assistant:", "assistant:", "NPC:", "Response:", "You are", "Emotion:", "User:"]:
             if marker in clean_text:
                 clean_text = clean_text.split(marker)[-1].strip()
-
-        if '.' in clean_text:
-            clean_text = clean_text.split('.')[0] + '.'
-
         clean_text = clean_text.strip('"').strip()
-
         if not clean_text or len(clean_text) < 5:
             clean_text = "I am here. How can I assist you?"
-
         return clean_text
 
+    def split_into_sentences(self, text):
+        sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+        return [s.strip() for s in sentences if s.strip()]
 
+    def tts_worker(self):
+        while self.running:
+            item = self.text_queue.get()
+            if item is None:
+                break
 
-    def speak(
-        self,
-        text: str,
-        emotion: str = "neutral",
-        intensity: float = 1.0
-    ):
-        full_text = text
+            full_text, metadata = item
+            job_id = metadata["id"]
+            request_time = metadata["request_time"]
 
-        clean_text = self.clean_text(text)
+            sentences = self.split_into_sentences(full_text)
+            print(f"🧠 TTS WORKER STARTING #{job_id} — {len(sentences)} sentences")
 
-        # Simple emotion tags for TTS
+            for i, sentence in enumerate(sentences, 1):
+                print(f"   Generating sentence {i}/{len(sentences)}: {sentence[:70]}{'...' if len(sentence)>70 else ''}")
+
+                gen_start = time.perf_counter()
+                audio = self.tts.generate(sentence)
+
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+
+                gen_time = time.perf_counter() - gen_start
+                audio_np = audio.squeeze().cpu().numpy()
+                audio_duration = len(audio_np) / self.sample_rate
+
+                print(f"   ✅ Sentence {i} ready in {gen_time:.3f}s ({audio_duration:.2f}s audio)")
+
+                # Pass sentence-specific info
+                self.audio_queue.put((
+                    audio_np,
+                    {
+                        "id": job_id,
+                        "sentence_num": i,
+                        "total_sentences": len(sentences),
+                        "request_time": request_time,   # original for first sentence
+                        "sentence_start_time": time.perf_counter()  # better for later sentences
+                    },
+                    gen_time,
+                    audio_duration
+                ))
+
+            print(f"🎯 All sentences for job #{job_id} queued\n")
+
+    def playback_worker(self):
+        while self.running:
+            item = self.audio_queue.get()
+            if item is None:
+                break
+
+            audio_np, meta, gen_time, audio_dur = item
+            sentence_info = f"Sentence {meta['sentence_num']}/{meta['total_sentences']}"
+
+            playback_start = time.perf_counter()
+
+            print(f"🔊 PLAYING {sentence_info} — Job #{meta['id']}")
+
+            sd.play(audio_np, self.sample_rate, blocking=True)
+
+            print(f"✅ FINISHED {sentence_info} — Job #{meta['id']}")
+
+            playback_time = time.perf_counter() - playback_start
+
+            # Better latency calculation
+            if meta['sentence_num'] == 1:
+                response_latency = playback_start - meta["request_time"]
+            else:
+                response_latency = playback_start - meta["sentence_start_time"]
+
+            print("\n========== LATENCY ==========")
+            print(f"Response start latency: {response_latency:.3f}s")
+            print(f"TTS generation:         {gen_time:.3f}s")
+            print(f"Playback duration:      {playback_time:.3f}s  ({audio_dur:.2f}s audio)")
+            print("=============================\n")
+
+    def speak_async(self, text, emotion="neutral"):
         emotion_tags = {
-            "hap": "[laugh]",
-            "sad": "[sigh]",
-            "ang": "[shout]",
-            "fear": "[gasp]",
-            "curious": "[curious]",
-            "neutral": ""
+            "hap": "[laugh]", "sad": "[sigh]", "ang": "[shout]",
+            "fear": "[gasp]", "curious": "[curious]", "neutral": ""
         }
 
         tag = emotion_tags.get(emotion, "")
-
+        clean_text = self.clean_text(text)
         prompt_text = f"{tag} {clean_text}".strip()
 
-        print("\n========== WHAT TTS IS RECEIVING ==========")
+        print("\n========== WHAT TTS RECEIVES ==========")
         print(prompt_text)
-        print("===========================================\n")
+        print("========================================")
 
-        generation_start = time.time()
+        self.job_id += 1
+        self.text_queue.put((
+            prompt_text,
+            {
+                "id": self.job_id,
+                "request_time": time.perf_counter(),
+                "text": clean_text,
+                "emotion": emotion
+            }
+        ))
 
-        audio = self.tts.generate(prompt_text)
-
-        generation_latency = time.time() - generation_start
-
-        output_path = "response.wav"
-
-        sf.write(
-            output_path,
-            audio.squeeze().cpu().numpy(),
-            self.sample_rate
-        )
-
-        audio_ready_time = time.time()
-
-        playback_start = time.time()
-
-        wave_obj = sa.WaveObject.from_wave_file(output_path)
-        play_obj = wave_obj.play()
-        play_obj.wait_done()
-
-        playback_latency = time.time() - playback_start
-
-        print(
-            f"🔊 Speaking ({emotion}): {clean_text}"
-        )
-
-        print(
-            f"   [Full LLM output: {full_text[:150]}...]"
-        )
-
-        return {
-            "text": clean_text,
-            "emotion": emotion,
-            "voice": "Chatterbox-Turbo",
-            "sample_rate": self.sample_rate,
-            "generation_latency": generation_latency,
-            "audio_ready_time": audio_ready_time,
-            "playback_latency": playback_latency,
-            "audio_path": output_path
-        }
+    def stop(self):
+        self.running = False
+        self.text_queue.put(None)
+        self.audio_queue.put(None)
