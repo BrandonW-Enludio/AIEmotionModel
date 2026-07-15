@@ -9,7 +9,7 @@ from chatterbox.tts_turbo import ChatterboxTurboTTS
 
 
 class TTSHandler:
-    def __init__(self):
+    def __init__(self, on_turn_complete=None):
         print("Loading Chatterbox-Turbo...")
         self.tts = ChatterboxTurboTTS.from_pretrained(
             device="cuda" if torch.cuda.is_available() else "cpu"
@@ -18,10 +18,14 @@ class TTSHandler:
         print("✅ Chatterbox-Turbo loaded!")
 
         self.text_queue = queue.Queue()
-        self.audio_queue = queue.Queue(maxsize=6)   # Bigger buffer = smoother
+        self.audio_queue = queue.Queue(maxsize=6)
 
         self.running = True
         self.job_id = 0
+        self.on_turn_complete = on_turn_complete
+
+        self._turns_lock = threading.Lock()
+        self._turns = {}
 
         threading.Thread(target=self.tts_worker, daemon=True).start()
         threading.Thread(target=self.playback_worker, daemon=True).start()
@@ -40,6 +44,36 @@ class TTSHandler:
         sentences = re.split(r'(?<=[.!?])\s+', text.strip())
         return [s.strip() for s in sentences if s.strip()]
 
+    def begin_turn(self, turn_id, speech_end_time):
+        with self._turns_lock:
+            self._turns[turn_id] = {
+                "speech_end_time": speech_end_time,
+                "expected": None,
+                "played": 0,
+                "finished": False,
+                "sentences": [],
+                "last_playback_end": None,
+                "first_playback_start": None,
+            }
+
+    def close_turn(self, turn_id, expected_sentences):
+        with self._turns_lock:
+            turn = self._turns.get(turn_id)
+            if turn is None:
+                return
+            turn["expected"] = expected_sentences
+            should_finish = (
+                turn["expected"] is not None
+                and turn["played"] >= turn["expected"]
+                and not turn["finished"]
+            )
+            if should_finish:
+                turn["finished"] = True
+                result = self._build_turn_result(turn_id, turn)
+
+        if should_finish:
+            self._emit_turn_complete(turn_id, result)
+
     def tts_worker(self):
         while self.running:
             item = self.text_queue.get()
@@ -47,8 +81,6 @@ class TTSHandler:
                 break
 
             full_text, metadata = item
-            job_id = metadata["id"]
-            request_time = metadata["request_time"]
             split_sentences = metadata.get("split_sentences", True)
 
             if split_sentences:
@@ -56,11 +88,7 @@ class TTSHandler:
             else:
                 sentences = [full_text.strip()]
 
-            print(f"🧠 TTS WORKER STARTING #{job_id} — {len(sentences)} sentences")
-
             for i, sentence in enumerate(sentences, 1):
-                print(f"   Generating sentence {i}/{len(sentences)}: {sentence[:70]}{'...' if len(sentence)>70 else ''}")
-
                 gen_start = time.perf_counter()
                 audio = self.tts.generate(sentence)
 
@@ -71,23 +99,16 @@ class TTSHandler:
                 audio_np = audio.squeeze().cpu().numpy()
                 audio_duration = len(audio_np) / self.sample_rate
 
-                print(f"   ✅ Sentence {i} ready in {gen_time:.3f}s ({audio_duration:.2f}s audio)")
-
-                # Pass sentence-specific info
                 self.audio_queue.put((
                     audio_np,
                     {
-                        "id": job_id,
-                        "sentence_num": i,
+                        **metadata,
+                        "sentence_num": metadata.get("sentence_index", i - 1) + 1,
                         "total_sentences": len(sentences),
-                        "request_time": request_time,   # original for first sentence
-                        "sentence_start_time": time.perf_counter()  # better for later sentences
+                        "gen_time": gen_time,
+                        "audio_duration": audio_duration,
                     },
-                    gen_time,
-                    audio_duration
                 ))
-
-            print(f"🎯 All sentences for job #{job_id} queued\n")
 
     def playback_worker(self):
         while self.running:
@@ -95,39 +116,109 @@ class TTSHandler:
             if item is None:
                 break
 
-            audio_np, meta, gen_time, audio_dur = item
-            sentence_info = f"Sentence {meta['sentence_num']}/{meta['total_sentences']}"
+            audio_np, meta = item
+            turn_id = meta.get("turn_id")
+            playback_start = time.time()
+            gap_from_previous = None
 
-            playback_start = time.perf_counter()
-
-            print(f"🔊 PLAYING {sentence_info} — Job #{meta['id']}")
+            if turn_id is not None:
+                with self._turns_lock:
+                    turn = self._turns.get(turn_id)
+                    if turn is not None:
+                        if turn["first_playback_start"] is None:
+                            turn["first_playback_start"] = playback_start
+                        if turn["last_playback_end"] is not None:
+                            gap_from_previous = playback_start - turn["last_playback_end"]
 
             sd.play(audio_np, self.sample_rate, blocking=True)
 
-            print(f"✅ FINISHED {sentence_info} — Job #{meta['id']}")
+            playback_end = time.time()
+            playback_time = playback_end - playback_start
 
-            playback_time = time.perf_counter() - playback_start
+            if turn_id is None:
+                continue
 
-            # Better latency calculation
-            if meta['sentence_num'] == 1:
-                response_latency = playback_start - meta["request_time"]
-            else:
-                response_latency = playback_start - meta["sentence_start_time"]
+            result = None
+            with self._turns_lock:
+                turn = self._turns.get(turn_id)
+                if turn is None:
+                    continue
 
-            print("\n========== LATENCY ==========")
-            print(f"Response start latency: {response_latency:.3f}s")
-            print(f"TTS generation:         {gen_time:.3f}s")
-            print(f"Playback duration:      {playback_time:.3f}s  ({audio_dur:.2f}s audio)")
-            print("=============================\n")
+                turn["sentences"].append({
+                    "index": meta.get("sentence_index", meta["sentence_num"] - 1),
+                    "gen_time": meta.get("gen_time", 0.0),
+                    "audio_duration": meta.get("audio_duration", 0.0),
+                    "playback_time": playback_time,
+                    "gap_from_previous": gap_from_previous,
+                })
+                turn["played"] += 1
+                turn["last_playback_end"] = playback_end
 
-    def speak_async(self, text, emotion="neutral"):
-        self._enqueue_text(text, emotion=emotion, split_sentences=True)
+                should_finish = (
+                    turn["expected"] is not None
+                    and turn["played"] >= turn["expected"]
+                    and not turn["finished"]
+                )
+                if should_finish:
+                    turn["finished"] = True
+                    result = self._build_turn_result(turn_id, turn)
 
-    def speak_sentence_async(self, text, emotion=None):
+            if result is not None:
+                self._emit_turn_complete(turn_id, result)
+
+    def _build_turn_result(self, turn_id, turn):
+        first_start = turn["first_playback_start"]
+        speech_end = turn["speech_end_time"]
+        response_start = (
+            (first_start - speech_end) if first_start is not None else None
+        )
+        return {
+            "turn_id": turn_id,
+            "response_start": response_start,
+            "sentences": list(turn["sentences"]),
+            "playback_end": turn["last_playback_end"],
+        }
+
+    def _emit_turn_complete(self, turn_id, result):
+        with self._turns_lock:
+            self._turns.pop(turn_id, None)
+
+        if self.on_turn_complete is not None:
+            self.on_turn_complete(result)
+
+    def speak_async(self, text, emotion="neutral", turn_id=None, sentence_index=0):
+        self._enqueue_text(
+            text,
+            emotion=emotion,
+            split_sentences=True,
+            turn_id=turn_id,
+            sentence_index=sentence_index,
+        )
+
+    def speak_sentence_async(
+        self,
+        text,
+        emotion=None,
+        turn_id=None,
+        sentence_index=0,
+    ):
         """Queue a single pre-split sentence. Pass emotion only for the first sentence."""
-        self._enqueue_text(text, emotion=emotion, split_sentences=False)
+        self._enqueue_text(
+            text,
+            emotion=emotion,
+            split_sentences=False,
+            turn_id=turn_id,
+            sentence_index=sentence_index,
+        )
 
-    def _enqueue_text(self, text, emotion=None, split_sentences=True):
+    def _enqueue_text(
+        self,
+        text,
+        emotion=None,
+        split_sentences=True,
+        turn_id=None,
+        sentence_index=0,
+    ):
         emotion_tags = {
             "hap": "[laugh]", "sad": "[sigh]", "ang": "[shout]",
             "fear": "[gasp]", "curious": "[curious]", "neutral": ""
@@ -136,10 +227,6 @@ class TTSHandler:
         tag = emotion_tags.get(emotion, "") if emotion else ""
         clean_text = self.clean_text(text)
         prompt_text = f"{tag} {clean_text}".strip()
-
-        print("\n========== WHAT TTS RECEIVES ==========")
-        print(prompt_text)
-        print("========================================")
 
         self.job_id += 1
         self.text_queue.put((
@@ -150,6 +237,8 @@ class TTSHandler:
                 "text": clean_text,
                 "emotion": emotion,
                 "split_sentences": split_sentences,
+                "turn_id": turn_id,
+                "sentence_index": sentence_index,
             }
         ))
 

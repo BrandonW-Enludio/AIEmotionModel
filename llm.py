@@ -200,8 +200,9 @@ class LLMHandler:
         """
         Stream LLM output and yield complete sentences as they arrive.
 
-        Yields dicts:
-            {"sentence": str, "sentence_index": int, "first_sentence_latency": float|None}
+        Yields dicts with:
+            sentence, sentence_index, first_sentence_latency,
+            sentence_latency (from stream start), delta_latency (since prior sentence)
         """
         inputs = self._prepare_inputs(
             user_text,
@@ -221,6 +222,7 @@ class LLMHandler:
 
         start_time = time.time()
         first_sentence_latency = None
+        last_sentence_time = start_time
         sentence_index = 0
         emitted_count = 0
         remainder = ""
@@ -233,14 +235,18 @@ class LLMHandler:
 
             while emitted_count < len(complete_sentences):
                 sentence = complete_sentences[emitted_count]
+                now = time.time()
                 if first_sentence_latency is None:
-                    first_sentence_latency = time.time() - start_time
+                    first_sentence_latency = now - start_time
 
                 yield {
                     "sentence": sentence,
                     "sentence_index": sentence_index,
                     "first_sentence_latency": first_sentence_latency,
+                    "sentence_latency": now - start_time,
+                    "delta_latency": now - last_sentence_time,
                 }
+                last_sentence_time = now
                 sentence_index += 1
                 emitted_count += 1
 
@@ -248,13 +254,16 @@ class LLMHandler:
 
         tail = remainder.strip()
         if tail and len(tail) >= 5:
+            now = time.time()
             if first_sentence_latency is None:
-                first_sentence_latency = time.time() - start_time
+                first_sentence_latency = now - start_time
 
             yield {
                 "sentence": tail,
                 "sentence_index": sentence_index,
                 "first_sentence_latency": first_sentence_latency,
+                "sentence_latency": now - start_time,
+                "delta_latency": now - last_sentence_time,
             }
 
     def generate_response(

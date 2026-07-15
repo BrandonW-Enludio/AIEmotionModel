@@ -37,12 +37,6 @@ class SERHandler:
 
         latency = time.time() - start
 
-        print(
-            f"🎙️ SER latency: {latency:.3f}s | "
-            f"{best['label']} "
-            f"({best['score']:.2f})"
-        )
-
         return {
             "emotion": best["label"],
             "confidence": best["score"],
