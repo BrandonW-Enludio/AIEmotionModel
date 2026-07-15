@@ -2,7 +2,10 @@ from faster_whisper import WhisperModel
 import torch
 import numpy as np
 
-class STTHandler:
+from interfaces import STTInterface
+
+
+class STTHandler(STTInterface):
     def __init__(self, model_size="small"):
         print(f"Loading faster-whisper {model_size} model... (first time may take a while)")
         self.model = WhisperModel(

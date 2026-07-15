@@ -6,22 +6,23 @@ import queue
 import threading
 import time
 
-from stt import STTHandler
-from tts import TTSHandler
-from llm import LLMHandler
-from ser import SERHandler
+from pipeline_config import DEFAULT_PIPELINE, build_handlers
 
 
 class VoicePipeline:
-    def __init__(self):
+    def __init__(self, pipeline_config=None):
 
         self.vad_model = load_silero_vad()
 
-        self.stt = STTHandler(model_size="small")
-        self.ser = SERHandler()
-        self.llm = LLMHandler()
-
-        self.tts = TTSHandler(on_turn_complete=self._on_turn_complete)
+        handlers = build_handlers(
+            pipeline_config or DEFAULT_PIPELINE,
+            on_turn_complete=self._on_turn_complete,
+        )
+        self.stt = handlers["stt"]
+        self.ser = handlers["ser"]
+        self.llm = handlers["llm"]
+        self.tts = handlers["tts"]
+        self.pipeline_config = handlers["config"]
 
         if torch.cuda.is_available():
             print("\n========== GPU MEMORY ==========")
@@ -46,7 +47,13 @@ class VoicePipeline:
         self._pending_turns = {}
         self._pending_lock = threading.Lock()
 
-        print("🎤 Full pipeline ready (VAD + STT + SER + LLM + TTS)")
+        print(
+            "🎤 Pipeline ready | "
+            f"STT={self.pipeline_config['stt']} "
+            f"SER={self.pipeline_config['ser']} "
+            f"LLM={self.pipeline_config['llm']} "
+            f"TTS={self.pipeline_config['tts']}"
+        )
 
     def audio_callback(self, indata, frames, time_info, status):
         self.audio_queue.put(indata[:, 0].astype(np.float32))
@@ -68,6 +75,13 @@ class VoicePipeline:
 
         print("\n========== PERFORMANCE ==========")
         print(f"Task #{turn['turn_id']}")
+        print(
+            f"Models: "
+            f"{self.pipeline_config['stt']} | "
+            f"{self.pipeline_config['ser']} | "
+            f"{self.pipeline_config['llm']} | "
+            f"{self.pipeline_config['tts']}"
+        )
         print(f"STT:              {turn['stt_latency']:.2f}s")
         print(f"Emotion:          {turn['emotion_latency']:.2f}s")
 
@@ -241,5 +255,8 @@ class VoicePipeline:
 
 
 if __name__ == "__main__":
+    # Swap models by editing DEFAULT_PIPELINE in pipeline_config.py
+    # or overriding here, e.g.:
+    #   VoicePipeline({**DEFAULT_PIPELINE, "stt": "whisper_base", "llm": "gemma2_2b"})
     pipeline = VoicePipeline()
     pipeline.start()

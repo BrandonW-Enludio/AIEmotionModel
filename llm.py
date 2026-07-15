@@ -11,6 +11,8 @@ from transformers import (
 )
 from transformers.generation.streamers import BaseStreamer
 
+from interfaces import LLMInterface
+
 
 SENTENCE_SPLIT = re.compile(r'(?<=[.!?])\s+')
 
@@ -62,7 +64,7 @@ class TokenDecodeStreamer(BaseStreamer):
             yield item
 
 
-class LLMHandler:
+class LLMHandler(LLMInterface):
     def __init__(self):
         print("Loading Qwen3 1.7B (more human-like mode)...")
         model_name = "Qwen/Qwen3-1.7B"

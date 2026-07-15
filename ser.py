@@ -3,8 +3,10 @@ import time
 import numpy as np
 from transformers import pipeline
 
+from interfaces import SERInterface
 
-class SERHandler:
+
+class SERHandler(SERInterface):
     def __init__(self):
         print("Loading SER model...")
 

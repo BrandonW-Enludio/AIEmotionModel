@@ -7,8 +7,10 @@ import re
 import sounddevice as sd
 from chatterbox.tts_turbo import ChatterboxTurboTTS
 
+from interfaces import TTSInterface
 
-class TTSHandler:
+
+class TTSHandler(TTSInterface):
     def __init__(self, on_turn_complete=None):
         print("Loading Chatterbox-Turbo...")
         self.tts = ChatterboxTurboTTS.from_pretrained(
