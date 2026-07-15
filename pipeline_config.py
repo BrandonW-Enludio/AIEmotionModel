@@ -24,6 +24,7 @@ from interfaces import BlockingLLMAdapter
 ROOT = Path(__file__).resolve().parent
 
 DEFAULT_PIPELINE = {
+    # Default LLM is blocking Qwen3 — see LATENCY_NOTES.md (~0.5s faster Response Start vs streaming).
     "stt": "whisper_small",
     "ser": "wav2vec2_superb",
     "llm": "qwen3_1_7b",
