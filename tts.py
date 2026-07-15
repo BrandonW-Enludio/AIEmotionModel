@@ -28,7 +28,7 @@ class TTSHandler:
 
     def clean_text(self, text):
         clean_text = text.strip()
-        for marker in ["Assistant:", "assistant:", "NPC:", "Response:", "You are", "Emotion:", "User:"]:
+        for marker in ["Assistant:", "assistant:", "NPC:", "Response:", "Emotion:", "User:"]:
             if marker in clean_text:
                 clean_text = clean_text.split(marker)[-1].strip()
         clean_text = clean_text.strip('"').strip()
@@ -49,8 +49,13 @@ class TTSHandler:
             full_text, metadata = item
             job_id = metadata["id"]
             request_time = metadata["request_time"]
+            split_sentences = metadata.get("split_sentences", True)
 
-            sentences = self.split_into_sentences(full_text)
+            if split_sentences:
+                sentences = self.split_into_sentences(full_text)
+            else:
+                sentences = [full_text.strip()]
+
             print(f"🧠 TTS WORKER STARTING #{job_id} — {len(sentences)} sentences")
 
             for i, sentence in enumerate(sentences, 1):
@@ -116,12 +121,19 @@ class TTSHandler:
             print("=============================\n")
 
     def speak_async(self, text, emotion="neutral"):
+        self._enqueue_text(text, emotion=emotion, split_sentences=True)
+
+    def speak_sentence_async(self, text, emotion=None):
+        """Queue a single pre-split sentence. Pass emotion only for the first sentence."""
+        self._enqueue_text(text, emotion=emotion, split_sentences=False)
+
+    def _enqueue_text(self, text, emotion=None, split_sentences=True):
         emotion_tags = {
             "hap": "[laugh]", "sad": "[sigh]", "ang": "[shout]",
             "fear": "[gasp]", "curious": "[curious]", "neutral": ""
         }
 
-        tag = emotion_tags.get(emotion, "")
+        tag = emotion_tags.get(emotion, "") if emotion else ""
         clean_text = self.clean_text(text)
         prompt_text = f"{tag} {clean_text}".strip()
 
@@ -136,7 +148,8 @@ class TTSHandler:
                 "id": self.job_id,
                 "request_time": time.perf_counter(),
                 "text": clean_text,
-                "emotion": emotion
+                "emotion": emotion,
+                "split_sentences": split_sentences,
             }
         ))
 

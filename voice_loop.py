@@ -146,49 +146,57 @@ class VoicePipeline:
                             )
 
                             # ----------------------------
-                            # LLM
+                            # LLM (streaming by sentence)
                             # ----------------------------
                             llm_start = time.time()
-                            
-                            response = self.llm.generate_response(
+                            llm_first_sentence_latency = None
+                            llm_total_latency = None
+                            sentence_count = 0
+                            got_response = False
+
+                            for chunk in self.llm.generate_response_stream(
                                 user_text=text,
                                 voice_emotion=voice_emotion,
-                                voice_confidence=voice_confidence
-                            )
+                                voice_confidence=voice_confidence,
+                            ):
+                                sentence = chunk["sentence"]
+                                sentence_index = chunk["sentence_index"]
+                                got_response = True
 
-                            llm_latency = (
-                                time.time()
-                                -
-                                llm_start
-                            )
+                                if llm_first_sentence_latency is None:
+                                    llm_first_sentence_latency = (
+                                        chunk["first_sentence_latency"]
+                                    )
 
+                                print(
+                                    f"🤖 Sentence {sentence_index + 1}: "
+                                    f"{sentence}"
+                                )
 
-                            #print(
-                            #    f"🤖 Response: {response}"
-                            #)
+                                self.tts.speak_sentence_async(
+                                    sentence,
+                                    emotion=voice_emotion if sentence_index == 0 else None,
+                                )
+                                sentence_count += 1
 
-
-                            # ----------------------------
-                            # Async TTS
-                            # ----------------------------
+                            llm_total_latency = time.time() - llm_start
 
                             tts_start = time.time()
 
-                            if not response or len(response) < 5:
+                            if not got_response:
                                 print("⚠️ LLM returned no dialogue. Using fallback.")
-                                response = "I'm here. What can I do for you?"
-
-
-                            self.tts.speak_async(
-                                response,
-                                emotion=voice_emotion
-                            )
-
+                                self.tts.speak_sentence_async(
+                                    "I'm here. What can I do for you?",
+                                    emotion=voice_emotion,
+                                )
+                                sentence_count = 1
+                                llm_first_sentence_latency = llm_total_latency
 
                             tts_latency = time.time() - tts_start
 
                             print(
-                                f"📤 Sent to TTS queue in {tts_latency:.3f}s"
+                                f"📤 Queued {sentence_count} sentence(s) "
+                                f"to TTS in {tts_latency:.3f}s"
                             )
 
 
@@ -198,10 +206,8 @@ class VoicePipeline:
 
                             response_start_latency = (
                                 stt_latency
-                                +
-                                emotion_latency
-                                +
-                                llm_latency
+                                + emotion_latency
+                                + (llm_first_sentence_latency or llm_total_latency)
                             )
 
 
@@ -225,8 +231,13 @@ class VoicePipeline:
                             )
 
                             print(
-                                f"🤖 LLM Inference: "
-                                f"{llm_latency:.2f}s"
+                                f"🤖 LLM first sentence: "
+                                f"{llm_first_sentence_latency:.2f}s"
+                            )
+
+                            print(
+                                f"🤖 LLM total: "
+                                f"{llm_total_latency:.2f}s"
                             )
 
                             print(
