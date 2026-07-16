@@ -1,9 +1,0 @@
-# Core dependencies for the local voice pipeline
-torch
-torchvision
-torchaudio
-silero-vad
-faster-whisper
-transformers
-soundfile
-simpleaudio
