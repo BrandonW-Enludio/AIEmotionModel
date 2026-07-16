@@ -5,6 +5,7 @@ from silero_vad import load_silero_vad
 import queue
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from pipeline_config import DEFAULT_PIPELINE, build_handlers
 
@@ -58,6 +59,27 @@ class VoicePipeline:
     def audio_callback(self, indata, frames, time_info, status):
         self.audio_queue.put(indata[:, 0].astype(np.float32))
 
+    def _run_stt_and_ser(self, audio_np):
+        """Run STT and SER concurrently on the same utterance."""
+
+        def stt_job():
+            start = time.time()
+            text = self.stt.transcribe(audio_np, self.sample_rate)
+            return text, time.time() - start
+
+        def ser_job():
+            return self.ser.detect(audio_np, self.sample_rate)
+
+        wall_start = time.time()
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            stt_future = pool.submit(stt_job)
+            ser_future = pool.submit(ser_job)
+            text, stt_latency = stt_future.result()
+            ser_result = ser_future.result()
+        wall_latency = time.time() - wall_start
+
+        return text, stt_latency, ser_result, wall_latency
+
     def _on_turn_complete(self, tts_result):
         turn_id = tts_result["turn_id"]
         with self._pending_lock:
@@ -84,9 +106,12 @@ class VoicePipeline:
         )
         print(f"STT:              {turn['stt_latency']:.2f}s")
         print(f"Emotion:          {turn['emotion_latency']:.2f}s")
+        print(
+            f"STT||SER wall:    {turn['stt_ser_wall']:.2f}s  "
+            f"(was ~{turn['stt_latency'] + turn['emotion_latency']:.2f}s serial)"
+        )
 
         if llm_sentences:
-            first = llm_sentences[0]
             print(f"LLM total:        {turn['llm_total']:.2f}s")
         else:
             print("LLM:              (no dialogue)")
@@ -141,14 +166,13 @@ class VoicePipeline:
                         self.speech_end_time = time.time()
                         audio_np = np.array(self.buffer, dtype=np.float32)
 
-                        stt_start = time.time()
-                        text = self.stt.transcribe(audio_np, self.sample_rate)
-                        stt_latency = time.time() - stt_start
+                        text, stt_latency, ser_result, stt_ser_wall = (
+                            self._run_stt_and_ser(audio_np)
+                        )
 
                         print(f"📝 You said: {text}")
 
                         if text:
-                            ser_result = self.ser.detect(audio_np, self.sample_rate)
                             voice_emotion = ser_result["emotion"]
                             voice_confidence = ser_result["confidence"]
                             emotion_latency = ser_result["latency"]
@@ -169,6 +193,7 @@ class VoicePipeline:
                                 "speech_end_time": speech_end,
                                 "stt_latency": stt_latency,
                                 "emotion_latency": emotion_latency,
+                                "stt_ser_wall": stt_ser_wall,
                                 "llm_sentences": [],
                                 "llm_total": 0.0,
                             }
