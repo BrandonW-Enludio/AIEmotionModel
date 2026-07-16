@@ -87,16 +87,7 @@ class VoicePipeline:
 
         if llm_sentences:
             first = llm_sentences[0]
-            print(f"LLM sent. 1:      {first['sentence_latency']:.2f}s")
-            for item in llm_sentences[1:]:
-                print(
-                    f"LLM sent. {item['index'] + 1}:      "
-                    f"+{item['delta_latency']:.2f}s "
-                    f"(at {item['sentence_latency']:.2f}s)"
-                )
             print(f"LLM total:        {turn['llm_total']:.2f}s")
-            saved = turn['llm_total'] - first['sentence_latency']
-            print(f"LLM stream lead:  {saved:.2f}s  (vs waiting for full reply)")
         else:
             print("LLM:              (no dialogue)")
 
