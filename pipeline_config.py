@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parent
 
 DEFAULT_PIPELINE = {
     # Default LLM is blocking Qwen3 — see LATENCY_NOTES.md (~0.5s faster Response Start vs streaming).
-    "stt": "whisper_small",
+    "stt": "whisper_tiny",
     "ser": "wav2vec2_superb",
     "llm": "qwen3_1_7b",
     "tts": "chatterbox_turbo",
