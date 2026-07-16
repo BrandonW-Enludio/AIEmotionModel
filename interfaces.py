@@ -90,7 +90,10 @@ class BlockingLLMAdapter(LLMInterface):
             )
         except TypeError:
             try:
-                text = self.llm.generate_response(user_text, voice_emotion)
+                text = self.llm.generate_response(
+                    user_text,
+                    emotion=voice_emotion,
+                )
             except TypeError:
                 text = self.llm.generate_response(user_text, voice_emotion)
 
