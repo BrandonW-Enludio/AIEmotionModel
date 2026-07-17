@@ -219,6 +219,11 @@ class VoicePipeline:
                                     "delta_latency": chunk["delta_latency"],
                                 })
 
+                                print(
+                                    f"📤 LLM → TTS [{turn_id}.{sentence_index}]: "
+                                    f"{sentence!r}"
+                                )
+
                                 self.tts.speak_sentence_async(
                                     sentence,
                                     emotion=voice_emotion if sentence_index == 0 else None,

@@ -65,13 +65,20 @@ class TTSHandler(TTSInterface):
         print(f"✅ Voice prompt ready: {path.name}")
 
     def clean_text(self, text):
+        original = text
         clean_text = text.strip()
         for marker in ["Assistant:", "assistant:", "NPC:", "Response:", "Emotion:", "User:"]:
             if marker in clean_text:
                 clean_text = clean_text.split(marker)[-1].strip()
         clean_text = clean_text.strip('"').strip()
         if not clean_text or len(clean_text) < 5:
+            print(
+                f"🧹 TTS clean_text fallback "
+                f"(from {original!r} → empty/short)"
+            )
             clean_text = "I am here. How can I assist you?"
+        elif clean_text != original.strip():
+            print(f"🧹 TTS clean_text: {original!r} → {clean_text!r}")
         return clean_text
 
     def split_into_sentences(self, text):
@@ -123,6 +130,17 @@ class TTSHandler(TTSInterface):
                 sentences = [full_text.strip()]
 
             for i, sentence in enumerate(sentences, 1):
+                turn_id = metadata.get("turn_id")
+                sentence_index = metadata.get(
+                    "sentence_index",
+                    i - 1,
+                )
+                print(
+                    f"🔊 TTS generate "
+                    f"[turn={turn_id} sent={sentence_index}]: "
+                    f"{sentence!r}"
+                )
+
                 gen_start = time.perf_counter()
                 audio = self.tts.generate(sentence)
 
@@ -152,6 +170,13 @@ class TTSHandler(TTSInterface):
 
             audio_np, meta = item
             turn_id = meta.get("turn_id")
+            spoken = meta.get("text")
+            sentence_index = meta.get("sentence_index")
+            print(
+                f"🔈 TTS playback "
+                f"[turn={turn_id} sent={sentence_index}]: "
+                f"{spoken!r}"
+            )
             playback_start = time.time()
             gap_from_previous = None
 
@@ -261,6 +286,12 @@ class TTSHandler(TTSInterface):
         tag = emotion_tags.get(emotion, "") if emotion else ""
         clean_text = self.clean_text(text)
         prompt_text = f"{tag} {clean_text}".strip()
+
+        print(
+            f"📥 TTS enqueue "
+            f"[turn={turn_id} sent={sentence_index} emotion={emotion!r}]: "
+            f"raw={text!r} | speak={prompt_text!r}"
+        )
 
         self.job_id += 1
         self.text_queue.put((
