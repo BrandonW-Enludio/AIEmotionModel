@@ -85,6 +85,8 @@ You should see models loading, then `Listening...`. Speak into the mic; when you
 
 **First run** downloads model weights and can take several minutes. Later runs reuse the local cache.
 
+On startup, TTS loads the included clone clip at `voices/reference.wav` (one-time conditioning; does not add per-sentence latency). Replace that file to change the voice, or pass `voice_prompt_path` into `TTSHandler`.
+
 ---
 
 ## Swapping models

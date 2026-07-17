@@ -1,8 +1,8 @@
-Put your Chatterbox Turbo reference voice here as:
+Default Chatterbox Turbo voice clip (tracked in git):
 
   reference.wav
 
-Requirements:
+Requirements for replacements:
   - WAV format
   - At least 5 seconds (6-15s recommended)
   - One clean English speaker

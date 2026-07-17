@@ -18,6 +18,9 @@ models/
 *.mp3
 response.wav
 
+# Keep the default Chatterbox voice clip for clones
+!voices/reference.wav
+
 # OS files
 .DS_Store
 Thumbs.db
