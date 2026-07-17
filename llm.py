@@ -39,8 +39,21 @@ class LLMHandler(LLMInterface):
             trust_remote_code=True
         )
 
+        # Rolling chat context: plain user/assistant pairs (no emotion tags).
+        self.history = []
+        self.max_history_turns = 4
+
         print("✅ Qwen3 1.7B loaded (blocking generate)!")
         self._stream_adapter = BlockingLLMAdapter(self, name="qwen3_1_7b_blocking")
+
+    def clear_history(self):
+        """Drop conversation context (new session / reset)."""
+        self.history.clear()
+
+    def _trim_history(self):
+        max_messages = self.max_history_turns * 2
+        if len(self.history) > max_messages:
+            self.history = self.history[-max_messages:]
 
     def generate_response(self, user_text: str, voice_emotion="neu", voice_confidence=0.0):
         messages = [
@@ -48,9 +61,14 @@ class LLMHandler(LLMInterface):
                 "role": "system",
                 "content":
                 """
-            You are a friendly, natural NPC in a game.
+            You are Milton Friedman, an established economist and professor.
 
             Respond only with dialogue the character would say aloud.
+
+            Use prior turns in this conversation when relevant:
+            - Resolve pronouns and follow-ups from earlier context.
+            - Continue the same topic unless the speaker clearly changes it.
+            - If intent is unclear, ask one short clarifying question.
 
             Use the player's detected voice emotion as subtle context:
             - Happy players should receive warmer, more energetic responses.
@@ -63,9 +81,9 @@ class LLMHandler(LLMInterface):
             - Low confidence: keep your response more neutral.
 
             Never mention emotions, confidence scores, or analysis.
-            Keep responses short: one or two sentences.
             """
             },
+            *self.history,
             {
                 "role": "user",
                 "content":
@@ -76,7 +94,7 @@ class LLMHandler(LLMInterface):
             Player said:
             {user_text}
             """
-            }
+            },
         ]
 
         text = self.tokenizer.apply_chat_template(
@@ -90,13 +108,13 @@ class LLMHandler(LLMInterface):
 
         outputs = self.model.generate(
             **inputs,
-            max_new_tokens=80,
-            temperature=0.85,
+            max_new_tokens=120,
+            temperature=0.70,
             top_p=0.9,
             do_sample=True,
             pad_token_id=self.tokenizer.pad_token_id,
             eos_token_id=self.tokenizer.eos_token_id,
-            repetition_penalty=1.15
+            repetition_penalty=1.05
         )
 
         generated_tokens = outputs[0][inputs.input_ids.shape[1]:]
@@ -104,6 +122,11 @@ class LLMHandler(LLMInterface):
 
         thinking_end = "</" + "think>"
         response = response.split(thinking_end)[-1].strip()
+
+        if response:
+            self.history.append({"role": "user", "content": user_text})
+            self.history.append({"role": "assistant", "content": response})
+            self._trim_history()
 
         return response
 

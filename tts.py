@@ -3,6 +3,7 @@ import time
 import queue
 import threading
 import re
+from pathlib import Path
 
 import sounddevice as sd
 from chatterbox.tts_turbo import ChatterboxTurboTTS
@@ -10,14 +11,21 @@ from chatterbox.tts_turbo import ChatterboxTurboTTS
 from interfaces import TTSInterface
 
 
+# Default clone clip. Place a clean English WAV here (>= 5 seconds, one speaker).
+DEFAULT_VOICE_PROMPT = Path(__file__).resolve().parent / "voices" / "reference.wav"
+
+
 class TTSHandler(TTSInterface):
-    def __init__(self, on_turn_complete=None):
+    def __init__(self, on_turn_complete=None, voice_prompt_path=None):
         print("Loading Chatterbox-Turbo...")
         self.tts = ChatterboxTurboTTS.from_pretrained(
             device="cuda" if torch.cuda.is_available() else "cpu"
         )
         self.sample_rate = self.tts.sr
         print("✅ Chatterbox-Turbo loaded!")
+
+        self.voice_prompt_path = None
+        self.set_voice_prompt(voice_prompt_path)
 
         self.text_queue = queue.Queue()
         self.audio_queue = queue.Queue(maxsize=6)
@@ -31,6 +39,30 @@ class TTSHandler(TTSInterface):
 
         threading.Thread(target=self.tts_worker, daemon=True).start()
         threading.Thread(target=self.playback_worker, daemon=True).start()
+
+    def set_voice_prompt(self, voice_prompt_path=None):
+        """
+        Load voice-clone conditionals once from a WAV.
+
+        Pass a path, or omit to use voices/reference.wav when present.
+        Conditionals are cached on the model — generate() stays fast after this.
+        """
+        path = Path(voice_prompt_path) if voice_prompt_path else DEFAULT_VOICE_PROMPT
+        path = path.expanduser().resolve()
+
+        if not path.is_file():
+            self.voice_prompt_path = None
+            print(
+                f"ℹ️ No voice clip at {path}. "
+                "Using Chatterbox builtin voice. "
+                "Add a >=5s clean WAV to voices/reference.wav to clone a voice."
+            )
+            return
+
+        print(f"Preparing voice conditionals from {path}...")
+        self.tts.prepare_conditionals(str(path))
+        self.voice_prompt_path = path
+        print(f"✅ Voice prompt ready: {path.name}")
 
     def clean_text(self, text):
         clean_text = text.strip()

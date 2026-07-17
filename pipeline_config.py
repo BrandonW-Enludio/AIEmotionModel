@@ -66,6 +66,8 @@ def _make_llm_alternate(filename: str, label: str):
 
 def _make_tts_chatterbox(on_turn_complete=None):
     from tts import TTSHandler
+    # Optional override: TTSHandler(..., voice_prompt_path="voices/my_npc.wav")
+    # Default looks for voices/reference.wav and falls back to builtin voice.
     return TTSHandler(on_turn_complete=on_turn_complete)
 
 
