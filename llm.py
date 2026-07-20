@@ -42,16 +42,22 @@ META_MARKERS = (
 
 class LLMHandler(LLMInterface):
     """
-    Default Qwen3 LLM: blocking generate (faster Response Start for short replies).
+    Scenario-aware blocking LLM (Qwen family by default).
 
-    Prompt / fallback come from scenario.py (hostage_taker by default).
-    Rejects mirrored / thinking-style outputs, retries once, then falls back.
+    Prompt / fallback / few-shots come from scenario.py.
+    Rejects mirrored / thinking-style / too-thin outputs, retries once, then falls back.
     """
 
-    def __init__(self, scenario_id=None):
-        print("Loading Qwen3 1.7B (blocking baseline)...")
-        model_name = "Qwen/Qwen3-1.7B"
+    def __init__(
+        self,
+        scenario_id=None,
+        model_name="Qwen/Qwen3-1.7B",
+        display_name=None,
+    ):
+        label = display_name or model_name
+        print(f"Loading {label} (blocking, scenario-aware)...")
 
+        self.model_name = model_name
         self.scenario = get_scenario(scenario_id)
         self.system_prompt = self.scenario["system_prompt"]
         self.fallback_reply = self.scenario["fallback_reply"]
@@ -79,10 +85,13 @@ class LLMHandler(LLMInterface):
         self.few_shot = list(self.scenario.get("few_shot") or [])
 
         print(
-            f"✅ Qwen3 1.7B loaded (blocking) | "
+            f"✅ {label} loaded | "
             f"scenario={self.scenario['id']}"
         )
-        self._stream_adapter = BlockingLLMAdapter(self, name="qwen3_1_7b_blocking")
+        self._stream_adapter = BlockingLLMAdapter(
+            self,
+            name=label.replace("/", "_").replace(" ", "_").lower(),
+        )
 
     def clear_history(self):
         """Drop conversation context (new session / reset)."""
@@ -195,12 +204,22 @@ class LLMHandler(LLMInterface):
         ]
 
     def _generate_once(self, messages) -> str:
-        text = self.tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
-            enable_thinking=False,
-        )
+        template_kwargs = {
+            "tokenize": False,
+            "add_generation_prompt": True,
+        }
+        # Qwen3 supports enable_thinking; Qwen2.5 chat template does not.
+        try:
+            text = self.tokenizer.apply_chat_template(
+                messages,
+                enable_thinking=False,
+                **template_kwargs,
+            )
+        except TypeError:
+            text = self.tokenizer.apply_chat_template(
+                messages,
+                **template_kwargs,
+            )
 
         inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
 

@@ -24,10 +24,10 @@ from interfaces import BlockingLLMAdapter
 ROOT = Path(__file__).resolve().parent
 
 DEFAULT_PIPELINE = {
-    # Default LLM is blocking Qwen3 — see LATENCY_NOTES.md (~0.5s faster Response Start vs streaming).
+    # Quality-first LLM for hostage scenario; swap back to qwen3_1_7b for speed.
     "stt": "whisper_tiny",
     "ser": "wav2vec2_superb",
-    "llm": "qwen3_1_7b",
+    "llm": "qwen2_5_7b",
     "tts": "chatterbox_turbo",
 }
 
@@ -54,10 +54,24 @@ def _make_ser_default():
     return SERHandler()
 
 
-def _make_llm_qwen():
+def _make_llm_qwen3_1_7b():
     from llm import LLMHandler
     from scenario import ACTIVE_SCENARIO_ID
-    return LLMHandler(scenario_id=ACTIVE_SCENARIO_ID)
+    return LLMHandler(
+        scenario_id=ACTIVE_SCENARIO_ID,
+        model_name="Qwen/Qwen3-1.7B",
+        display_name="Qwen3 1.7B",
+    )
+
+
+def _make_llm_qwen2_5_7b():
+    from llm import LLMHandler
+    from scenario import ACTIVE_SCENARIO_ID
+    return LLMHandler(
+        scenario_id=ACTIVE_SCENARIO_ID,
+        model_name="Qwen/Qwen2.5-7B-Instruct",
+        display_name="Qwen2.5-7B-Instruct",
+    )
 
 
 def _make_llm_alternate(filename: str, label: str):
@@ -86,8 +100,9 @@ SER_REGISTRY: dict[str, Callable] = {
 }
 
 LLM_REGISTRY: dict[str, Callable] = {
-    "qwen3_1_7b": _make_llm_qwen,
-    # AlternateModels — blocking today, wrapped so voice_loop still works.
+    "qwen3_1_7b": _make_llm_qwen3_1_7b,
+    "qwen2_5_7b": _make_llm_qwen2_5_7b,
+    # AlternateModels — own prompts today; do not use scenario.py yet.
     "gemma2_2b": lambda: _make_llm_alternate("llm_gemma2B.py", "gemma2_2b"),
     "gemma4_12b": lambda: _make_llm_alternate("llm_gemma4_12B.py", "gemma4_12b"),
     "phi3_5_mini": lambda: _make_llm_alternate("llm_Phi3_5_mini.py", "phi3_5_mini"),
