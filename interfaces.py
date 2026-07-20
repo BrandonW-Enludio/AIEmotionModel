@@ -8,6 +8,81 @@ from typing import Iterator, Optional
 
 SENTENCE_SPLIT = re.compile(r'(?<=[.!?])\s+')
 
+# Keep TTS sentence-1 short so Response Start stays in budget (gen time ∝ text).
+FIRST_SENTENCE_MAX_WORDS = 10
+
+# Prefer natural clause breaks when forcing a short opener.
+_CLAUSE_BREAK = re.compile(
+    r"(?:,\s+|;|\s+[—–-]\s+|\s+(?:then|but|and|so)\s+)",
+    re.IGNORECASE,
+)
+
+
+def split_reply_for_tts(
+    text: str,
+    max_first_words: int = FIRST_SENTENCE_MAX_WORDS,
+):
+    """
+    Split a full reply into spoken chunks for TTS.
+
+    If the first sentence is long, cut it at a clause boundary (or a hard
+    word cap) so Chatterbox can start audio on a short opener.
+    History still stores the original full string from the LLM.
+    """
+    text = (text or "").strip()
+    if not text:
+        return []
+
+    parts = [p.strip() for p in SENTENCE_SPLIT.split(text) if p.strip()]
+    if not parts:
+        return [text]
+
+    first, *rest = parts
+    if len(first.split()) <= max_first_words:
+        return parts
+
+    opener, leftover = _force_short_opener(first, max_first_words)
+    out = [opener]
+    if leftover:
+        out.append(leftover)
+    out.extend(rest)
+    return out
+
+
+def _force_short_opener(sentence: str, max_words: int):
+    """Return (short_opener, remainder). Remainder may be empty."""
+    words = sentence.split()
+    if len(words) <= max_words:
+        return sentence, ""
+
+    best_end = None
+    for match in _CLAUSE_BREAK.finditer(sentence):
+        prefix = sentence[: match.start()].strip()
+        if not prefix:
+            continue
+        if len(prefix.split()) <= max_words:
+            best_end = match.end()
+        else:
+            break
+
+    if best_end is not None:
+        opener = sentence[:best_end].strip().rstrip(",;:—–-").strip()
+        leftover = sentence[best_end:].strip()
+        if opener and leftover:
+            if leftover[0].islower():
+                leftover = leftover[0].upper() + leftover[1:]
+            if opener[-1] not in ".!?":
+                opener = opener + "."
+            return opener, leftover
+
+    opener = " ".join(words[:max_words]).rstrip(",;:—–-")
+    leftover = " ".join(words[max_words:]).strip()
+    if leftover and leftover[0].islower():
+        leftover = leftover[0].upper() + leftover[1:]
+    if opener and opener[-1] not in ".!?":
+        opener = opener + "."
+    return opener, leftover
+
 
 class STTInterface(ABC):
     @abstractmethod
@@ -102,9 +177,9 @@ class BlockingLLMAdapter(LLMInterface):
         if not text:
             return
 
-        parts = [p.strip() for p in SENTENCE_SPLIT.split(text) if p.strip()]
+        parts = split_reply_for_tts(text)
         if not parts:
-            parts = [text]
+            return
 
         for index, sentence in enumerate(parts):
             yield {
