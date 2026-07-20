@@ -9,6 +9,7 @@ import sounddevice as sd
 from chatterbox.tts_turbo import ChatterboxTurboTTS
 
 from interfaces import TTSInterface
+from scenario import get_scenario, tts_tag_for_emotion
 
 
 # Default clone clip. Place a clean English WAV here (>= 5 seconds, one speaker).
@@ -16,7 +17,12 @@ DEFAULT_VOICE_PROMPT = Path(__file__).resolve().parent / "voices" / "reference.w
 
 
 class TTSHandler(TTSInterface):
-    def __init__(self, on_turn_complete=None, voice_prompt_path=None):
+    def __init__(
+        self,
+        on_turn_complete=None,
+        voice_prompt_path=None,
+        scenario_id=None,
+    ):
         print("Loading Chatterbox-Turbo...")
         self.tts = ChatterboxTurboTTS.from_pretrained(
             device="cuda" if torch.cuda.is_available() else "cpu"
@@ -24,8 +30,14 @@ class TTSHandler(TTSInterface):
         self.sample_rate = self.tts.sr
         print("✅ Chatterbox-Turbo loaded!")
 
+        self.scenario = get_scenario(scenario_id)
+
         self.voice_prompt_path = None
-        self.set_voice_prompt(voice_prompt_path)
+        # Scenario voice wins unless an explicit path is passed.
+        prompt = voice_prompt_path
+        if prompt is None:
+            prompt = self.scenario.get("voice_prompt")
+        self.set_voice_prompt(prompt)
 
         self.text_queue = queue.Queue()
         self.audio_queue = queue.Queue(maxsize=6)
@@ -76,7 +88,7 @@ class TTSHandler(TTSInterface):
                 f"🧹 TTS clean_text fallback "
                 f"(from {original!r} → empty/short)"
             )
-            clean_text = "I am here. How can I assist you?"
+            clean_text = "Stay where you are. Don't come closer."
         elif clean_text != original.strip():
             print(f"🧹 TTS clean_text: {original!r} → {clean_text!r}")
         return clean_text
@@ -245,10 +257,18 @@ class TTSHandler(TTSInterface):
         if self.on_turn_complete is not None:
             self.on_turn_complete(result)
 
-    def speak_async(self, text, emotion="neutral", turn_id=None, sentence_index=0):
+    def speak_async(
+        self,
+        text,
+        emotion="neutral",
+        voice_confidence=1.0,
+        turn_id=None,
+        sentence_index=0,
+    ):
         self._enqueue_text(
             text,
             emotion=emotion,
+            voice_confidence=voice_confidence,
             split_sentences=True,
             turn_id=turn_id,
             sentence_index=sentence_index,
@@ -258,6 +278,7 @@ class TTSHandler(TTSInterface):
         self,
         text,
         emotion=None,
+        voice_confidence=1.0,
         turn_id=None,
         sentence_index=0,
     ):
@@ -265,6 +286,7 @@ class TTSHandler(TTSInterface):
         self._enqueue_text(
             text,
             emotion=emotion,
+            voice_confidence=voice_confidence,
             split_sentences=False,
             turn_id=turn_id,
             sentence_index=sentence_index,
@@ -274,22 +296,27 @@ class TTSHandler(TTSInterface):
         self,
         text,
         emotion=None,
+        voice_confidence=1.0,
         split_sentences=True,
         turn_id=None,
         sentence_index=0,
     ):
-        emotion_tags = {
-            "hap": "[laugh]", "sad": "[sigh]", "ang": "[shout]",
-            "fear": "[gasp]", "curious": "[curious]", "neutral": ""
-        }
+        # Scene-aware delivery: do NOT mirror player emotion into NPC voice.
+        tag = ""
+        if emotion is not None:
+            tag = tts_tag_for_emotion(
+                self.scenario,
+                emotion,
+                voice_confidence,
+            )
 
-        tag = emotion_tags.get(emotion, "") if emotion else ""
         clean_text = self.clean_text(text)
-        prompt_text = f"{tag} {clean_text}".strip()
+        prompt_text = f"{tag} {clean_text}".strip() if tag else clean_text
 
         print(
             f"📥 TTS enqueue "
-            f"[turn={turn_id} sent={sentence_index} emotion={emotion!r}]: "
+            f"[turn={turn_id} sent={sentence_index} "
+            f"ser={emotion!r} tag={tag!r}]: "
             f"raw={text!r} | speak={prompt_text!r}"
         )
 
@@ -301,6 +328,7 @@ class TTSHandler(TTSInterface):
                 "request_time": time.perf_counter(),
                 "text": clean_text,
                 "emotion": emotion,
+                "tts_tag": tag,
                 "split_sentences": split_sentences,
                 "turn_id": turn_id,
                 "sentence_index": sentence_index,

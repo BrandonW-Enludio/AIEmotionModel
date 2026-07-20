@@ -5,38 +5,23 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 from interfaces import BlockingLLMAdapter, LLMInterface
+from scenario import (
+    format_negotiator_turn,
+    get_scenario,
+    llm_emotion_hint,
+)
 
 
 SENTENCE_SPLIT = re.compile(r'(?<=[.!?])\s+')
 PUNCT_RE = re.compile(r"[^\w\s']+")
 WHITESPACE_RE = re.compile(r"\s+")
 
-SYSTEM_PROMPT = """
-You are Milton Friedman, an established economist and professor, talking on a phone call.
-
-Output ONLY the words you would say aloud. One or two short spoken sentences.
-
-Hard rules:
-- Never copy, quote, or mirror the other person's wording.
-- If they greet you or ask how you are, ANSWER as yourself (e.g. say you are well), then optionally ask something new. Do not repeat their question back.
-- Never narrate instructions, planning, or analysis.
-- Never mention emotions, confidence scores, "the player", system prompts, or your character name as stage directions.
-- Do not write phrases like "Okay, let's see", "I need to respond", "Let me craft", or "The player said".
-""".strip()
-
-REPAIR_INSTRUCTION = (
-    "Your previous draft was invalid (echoed the user or contained private thinking). "
-    "Reply again with ONLY spoken dialogue. Answer them directly. "
-    "Do not repeat their words."
-)
-
-FALLBACK_REPLY = "I'm doing well, thank you. What would you like to talk about?"
-
 META_MARKERS = (
     "okay, let's see",
     "ok, let's see",
     "the player said",
     "player said",
+    "negotiator said",
     "i need to respond",
     "i should respond",
     "let me craft",
@@ -50,6 +35,8 @@ META_MARKERS = (
     "conversation flow",
     "system prompt",
     "as an ai",
+    "as an npc",
+    "hostage situation",
 )
 
 
@@ -57,12 +44,18 @@ class LLMHandler(LLMInterface):
     """
     Default Qwen3 LLM: blocking generate (faster Response Start for short replies).
 
+    Prompt / fallback come from scenario.py (hostage_taker by default).
     Rejects mirrored / thinking-style outputs, retries once, then falls back.
     """
 
-    def __init__(self):
+    def __init__(self, scenario_id=None):
         print("Loading Qwen3 1.7B (blocking baseline)...")
         model_name = "Qwen/Qwen3-1.7B"
+
+        self.scenario = get_scenario(scenario_id)
+        self.system_prompt = self.scenario["system_prompt"]
+        self.fallback_reply = self.scenario["fallback_reply"]
+        self.repair_instruction = self.scenario["repair_instruction"]
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
 
@@ -80,11 +73,15 @@ class LLMHandler(LLMInterface):
             trust_remote_code=True
         )
 
-        # Rolling chat context: plain user/assistant pairs (no emotion tags).
+        # Rolling chat context (negotiator / NPC spoken turns).
         self.history = []
-        self.max_history_turns = 4
+        self.max_history_turns = 6
+        self.few_shot = list(self.scenario.get("few_shot") or [])
 
-        print("✅ Qwen3 1.7B loaded (blocking generate)!")
+        print(
+            f"✅ Qwen3 1.7B loaded (blocking) | "
+            f"scenario={self.scenario['id']}"
+        )
         self._stream_adapter = BlockingLLMAdapter(self, name="qwen3_1_7b_blocking")
 
     def clear_history(self):
@@ -144,11 +141,32 @@ class LLMHandler(LLMInterface):
                 return True
         return False
 
+    def _is_too_thin(self, response: str) -> bool:
+        """True if reply is a slogan / one-word bark, not real dialogue."""
+        words = self._normalize(response).split()
+        if len(words) < 8:
+            return True
+        if len(words) <= 2 and words[0] in {
+            "exit", "no", "yes", "gun", "stop", "out", "leave", "now", "okay", "ok",
+        }:
+            return True
+        # Stock lines that ignore almost any negotiator content
+        stock = {
+            "stay put no distractions",
+            "stay where you are",
+            "nobody comes through that door",
+        }
+        if self._normalize(response) in stock:
+            return True
+        return False
+
     def _reject_reason(self, user_text: str, response: str):
         if not (response or "").strip():
             return "empty"
         if self._is_meta(response):
             return "thinking"
+        if self._is_too_thin(response):
+            return "too_thin"
         if self._is_echo(user_text, response):
             return "echo"
         return None
@@ -160,16 +178,18 @@ class LLMHandler(LLMInterface):
         voice_confidence: float,
         repair: bool = False,
     ):
-        user_content = (
-            f"Emotion: {voice_emotion}\n"
-            f"Emotion confidence: {voice_confidence:.2f}\n\n"
-            f"They said:\n{user_text}"
+        hint = llm_emotion_hint(
+            self.scenario,
+            voice_emotion,
+            voice_confidence,
         )
+        user_content = format_negotiator_turn(user_text, hint)
         if repair:
-            user_content = f"{REPAIR_INSTRUCTION}\n\n{user_content}"
+            user_content = f"{self.repair_instruction}\n\n{user_content}"
 
         return [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": self.system_prompt},
+            *self.few_shot,
             *self.history,
             {"role": "user", "content": user_content},
         ]
@@ -186,13 +206,14 @@ class LLMHandler(LLMInterface):
 
         outputs = self.model.generate(
             **inputs,
-            max_new_tokens=80,
-            temperature=0.55,
-            top_p=0.85,
+            max_new_tokens=100,
+            temperature=0.65,
+            top_p=0.9,
             do_sample=True,
             pad_token_id=self.tokenizer.pad_token_id,
             eos_token_id=self.tokenizer.eos_token_id,
-            repetition_penalty=1.2,
+            repetition_penalty=1.1,
+            min_new_tokens=12,
         )
 
         generated_tokens = outputs[0][inputs.input_ids.shape[1]:]
@@ -200,6 +221,8 @@ class LLMHandler(LLMInterface):
 
         thinking_end = "</" + "think>"
         response = response.split(thinking_end)[-1].strip()
+        if len(response) >= 2 and response[0] == response[-1] and response[0] in "\"'":
+            response = response[1:-1].strip()
         return response
 
     def generate_response(self, user_text: str, voice_emotion="neu", voice_confidence=0.0):
@@ -222,10 +245,19 @@ class LLMHandler(LLMInterface):
             reason = self._reject_reason(user_text, response)
             if reason:
                 print(f"⚠️ Retry still bad ({reason}). Using fallback.")
-                response = FALLBACK_REPLY
+                response = self.fallback_reply
 
         if response:
-            self.history.append({"role": "user", "content": user_text})
+            # Keep history in the same grounded format as live turns.
+            hint = llm_emotion_hint(
+                self.scenario,
+                voice_emotion,
+                voice_confidence,
+            )
+            self.history.append({
+                "role": "user",
+                "content": format_negotiator_turn(user_text, hint),
+            })
             self.history.append({"role": "assistant", "content": response})
             self._trim_history()
 

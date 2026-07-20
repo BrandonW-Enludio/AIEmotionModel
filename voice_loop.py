@@ -8,6 +8,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 from pipeline_config import DEFAULT_PIPELINE, build_handlers
+from scenario import ACTIVE_SCENARIO_ID
 
 
 class VoicePipeline:
@@ -50,6 +51,7 @@ class VoicePipeline:
 
         print(
             "🎤 Pipeline ready | "
+            f"scenario={ACTIVE_SCENARIO_ID} "
             f"STT={self.pipeline_config['stt']} "
             f"SER={self.pipeline_config['ser']} "
             f"LLM={self.pipeline_config['llm']} "
@@ -227,6 +229,7 @@ class VoicePipeline:
                                 self.tts.speak_sentence_async(
                                     sentence,
                                     emotion=voice_emotion if sentence_index == 0 else None,
+                                    voice_confidence=voice_confidence,
                                     turn_id=turn_id,
                                     sentence_index=sentence_index,
                                 )
@@ -242,8 +245,9 @@ class VoicePipeline:
                                     "delta_latency": turn["llm_total"],
                                 })
                                 self.tts.speak_sentence_async(
-                                    "I'm here. What can I do for you?",
+                                    "Stay where you are. Don't come closer.",
                                     emotion=voice_emotion,
+                                    voice_confidence=voice_confidence,
                                     turn_id=turn_id,
                                     sentence_index=0,
                                 )
