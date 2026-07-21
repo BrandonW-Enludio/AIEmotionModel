@@ -7,7 +7,8 @@ Usage:
     handlers = build_handlers(DEFAULT_PIPELINE, on_turn_complete=cb)
 
     # Or override one stage:
-    build_handlers({**DEFAULT_PIPELINE, "llm": "qwen3_1_7b", "stt": "whisper_base"})
+    #   build_handlers({**DEFAULT_PIPELINE, "llm": "openai_compat"})
+    # openai_compat needs OPENAI_MODEL (+ optional OPENAI_BASE_URL / OPENAI_API_KEY).
 
 Available keys are listed in AVAILABLE.
 """
@@ -24,10 +25,11 @@ from interfaces import BlockingLLMAdapter
 ROOT = Path(__file__).resolve().parent
 
 DEFAULT_PIPELINE = {
-    # Quality-first LLM for hostage scenario; swap back to qwen3_1_7b for speed.
+    # LLM via llama.cpp / any OpenAI-compat server (see llm_openai.py).
+    # Swap back to "qwen2_5_7b" for in-process HuggingFace.
     "stt": "whisper_tiny",
     "ser": "wav2vec2_superb",
-    "llm": "qwen2_5_7b",
+    "llm": "openai_compat",
     "tts": "chatterbox_turbo",
 }
 
@@ -74,6 +76,12 @@ def _make_llm_qwen2_5_7b():
     )
 
 
+def _make_llm_openai_compat():
+    from llm_openai import OpenAICompatLLMHandler
+    from scenario import ACTIVE_SCENARIO_ID
+    return OpenAICompatLLMHandler(scenario_id=ACTIVE_SCENARIO_ID)
+
+
 def _make_llm_alternate(filename: str, label: str):
     module = _load_alternate_module(filename)
     return BlockingLLMAdapter(module.LLMHandler(), name=label)
@@ -102,6 +110,8 @@ SER_REGISTRY: dict[str, Callable] = {
 LLM_REGISTRY: dict[str, Callable] = {
     "qwen3_1_7b": _make_llm_qwen3_1_7b,
     "qwen2_5_7b": _make_llm_qwen2_5_7b,
+    # Any OpenAI-style /v1/chat/completions (llama.cpp, cloud, etc.).
+    "openai_compat": _make_llm_openai_compat,
     # AlternateModels — own prompts today; do not use scenario.py yet.
     "gemma2_2b": lambda: _make_llm_alternate("llm_gemma2B.py", "gemma2_2b"),
     "gemma4_12b": lambda: _make_llm_alternate("llm_gemma4_12B.py", "gemma4_12b"),
