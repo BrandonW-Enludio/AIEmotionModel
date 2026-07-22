@@ -31,6 +31,8 @@ DEFAULT_PIPELINE = {
     "ser": "wav2vec2_superb",
     "llm": "openai_compat",
     "tts": "chatterbox_turbo",
+    # When True, each NPC turn is written to recordings/turn_<id>.wav
+    "save_tts_wavs": True,
 }
 
 
@@ -87,12 +89,13 @@ def _make_llm_alternate(filename: str, label: str):
     return BlockingLLMAdapter(module.LLMHandler(), name=label)
 
 
-def _make_tts_chatterbox(on_turn_complete=None):
+def _make_tts_chatterbox(on_turn_complete=None, save_tts_wavs=False):
     from tts import TTSHandler
     from scenario import ACTIVE_SCENARIO_ID
     return TTSHandler(
         on_turn_complete=on_turn_complete,
         scenario_id=ACTIVE_SCENARIO_ID,
+        save_tts_wavs=save_tts_wavs,
     )
 
 
@@ -154,7 +157,10 @@ def build_handlers(
     ser = _resolve(SER_REGISTRY, cfg["ser"], "ser")()
     llm = _resolve(LLM_REGISTRY, cfg["llm"], "llm")()
     tts_factory = _resolve(TTS_REGISTRY, cfg["tts"], "tts")
-    tts = tts_factory(on_turn_complete=on_turn_complete)
+    tts = tts_factory(
+        on_turn_complete=on_turn_complete,
+        save_tts_wavs=bool(cfg.get("save_tts_wavs", False)),
+    )
 
     return {
         "stt": stt,

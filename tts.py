@@ -5,7 +5,9 @@ import threading
 import re
 from pathlib import Path
 
+import numpy as np
 import sounddevice as sd
+import soundfile as sf
 from chatterbox.tts_turbo import ChatterboxTurboTTS
 
 from interfaces import TTSInterface
@@ -14,6 +16,7 @@ from scenario import get_scenario, tts_tag_for_emotion
 
 # Default clone clip. Place a clean English WAV here (>= 5 seconds, one speaker).
 DEFAULT_VOICE_PROMPT = Path(__file__).resolve().parent / "voices" / "reference.wav"
+DEFAULT_RECORDINGS_DIR = Path(__file__).resolve().parent / "recordings"
 
 
 class TTSHandler(TTSInterface):
@@ -22,6 +25,8 @@ class TTSHandler(TTSInterface):
         on_turn_complete=None,
         voice_prompt_path=None,
         scenario_id=None,
+        save_tts_wavs=False,
+        recordings_dir=None,
     ):
         print("Loading Chatterbox-Turbo...")
         self.tts = ChatterboxTurboTTS.from_pretrained(
@@ -31,6 +36,12 @@ class TTSHandler(TTSInterface):
         print("✅ Chatterbox-Turbo loaded!")
 
         self.scenario = get_scenario(scenario_id)
+
+        self.save_tts_wavs = bool(save_tts_wavs)
+        self.recordings_dir = Path(recordings_dir) if recordings_dir else DEFAULT_RECORDINGS_DIR
+        if self.save_tts_wavs:
+            self.recordings_dir.mkdir(parents=True, exist_ok=True)
+            print(f"💾 TTS WAV saving ON → {self.recordings_dir}")
 
         self.voice_prompt_path = None
         # Scenario voice wins unless an explicit path is passed.
@@ -105,6 +116,7 @@ class TTSHandler(TTSInterface):
                 "played": 0,
                 "finished": False,
                 "sentences": [],
+                "audio_chunks": [],  # (sentence_index, audio_np) when saving WAVs
                 "last_playback_end": None,
                 "first_playback_start": None,
             }
@@ -122,6 +134,8 @@ class TTSHandler(TTSInterface):
             )
             if should_finish:
                 turn["finished"] = True
+                if self.save_tts_wavs:
+                    self._save_turn_wav(turn_id, turn)
                 result = self._build_turn_result(turn_id, turn)
 
         if should_finish:
@@ -222,6 +236,9 @@ class TTSHandler(TTSInterface):
                     "playback_time": playback_time,
                     "gap_from_previous": gap_from_previous,
                 })
+                if self.save_tts_wavs:
+                    sent_idx = meta.get("sentence_index", meta["sentence_num"] - 1)
+                    turn["audio_chunks"].append((sent_idx, np.asarray(audio_np)))
                 turn["played"] += 1
                 turn["last_playback_end"] = playback_end
 
@@ -232,10 +249,25 @@ class TTSHandler(TTSInterface):
                 )
                 if should_finish:
                     turn["finished"] = True
+                    if self.save_tts_wavs:
+                        self._save_turn_wav(turn_id, turn)
                     result = self._build_turn_result(turn_id, turn)
 
             if result is not None:
                 self._emit_turn_complete(turn_id, result)
+
+    def _save_turn_wav(self, turn_id, turn):
+        chunks = turn.get("audio_chunks") or []
+        if not chunks:
+            return
+        chunks_sorted = [audio for _, audio in sorted(chunks, key=lambda x: x[0])]
+        try:
+            full = np.concatenate(chunks_sorted)
+            out_path = self.recordings_dir / f"turn_{turn_id}.wav"
+            sf.write(str(out_path), full, self.sample_rate)
+            print(f"💾 Saved TTS turn WAV: {out_path}")
+        except Exception as e:
+            print(f"⚠️ Failed to save TTS WAV for turn {turn_id}: {e}")
 
     def _build_turn_result(self, turn_id, turn):
         first_start = turn["first_playback_start"]
