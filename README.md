@@ -91,7 +91,7 @@ Example — Qwen2.5-7B-Instruct Q5 (good baseline):
 
 ```powershell
 pip install huggingface_hub
-huggingface-cli download Qwen/Qwen2.5-7B-Instruct-GGUF `
+hf download Qwen/Qwen2.5-7B-Instruct-GGUF `
   qwen2.5-7b-instruct-q5_k_m.gguf `
   --local-dir K:\AI\models
 ```
@@ -99,7 +99,7 @@ huggingface-cli download Qwen/Qwen2.5-7B-Instruct-GGUF `
 Notes:
 
 - Exact filenames vary by repo; check the Hugging Face file list and pick a single **`Q4_K_M`** or **`Q5_K_M`** Instruct GGUF.
-- If the download is split (`-00001-of-00002.gguf`), point the server at the **`00001`** file.
+- If the download is split (`-00001-of-00002.gguf`), make sure to download both files.
 - Store GGUFs on a drive with enough space (they are multi‑GB).
 
 Other useful Instruct GGUFs for A/B tests: Qwen2.5-14B-Instruct (try **Q4_K_M** on 16 GB), Llama 3.1 8B Instruct (e.g. [bartowski/Meta-Llama-3.1-8B-Instruct-GGUF](https://huggingface.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF)).
@@ -113,7 +113,7 @@ Other useful Instruct GGUFs for A/B tests: Qwen2.5-14B-Instruct (try **Q4_K_M** 
 From the folder that contains `llama-server.exe`:
 
 ```powershell
-.\llama-server.exe -m "K:\AI\models\YOUR-MODEL.gguf" --port 8080 -ngl 99 -c 4096
+.\llama-server.exe -m K:\AI\models\YOUR-MODEL.gguf --port 8080 -ngl 99 -c 4096
 ```
 
 | Flag | Meaning |
@@ -126,14 +126,6 @@ From the folder that contains `llama-server.exe`:
 Check that it is up: open `http://127.0.0.1:8080` or `http://127.0.0.1:8080/v1/models`.
 
 Stop the server with **Ctrl+C** in that window.
-
-Optional env vars for the Python client (usually not required — the app can auto-discover the model from `/v1/models`):
-
-```powershell
-$env:OPENAI_BASE_URL = "http://127.0.0.1:8080/v1"
-$env:OPENAI_API_KEY  = "sk-local"
-# $env:OPENAI_MODEL  = "K:\AI\models\YOUR-MODEL.gguf"   # optional override
-```
 
 ### 2. Start the voice pipeline
 
@@ -198,7 +190,7 @@ Latency notes for streaming vs blocking LLM: `LATENCY_NOTES.md`.
 | `ModuleNotFoundError` | Activate `venv`, then `python setup.py` again |
 | CUDA not available | Confirm `nvidia-smi` works; reinstall torch via `setup.py` (do not install torch from plain PyPI without the cu124 index) |
 | `OpenAI-compat unreachable` | Start `llama-server` first; confirm port `8080` and `OPENAI_BASE_URL` |
-| GGUF fails to load | Update llama.cpp prebuilt release; confirm Instruct GGUF path; try Q4_K_M if VRAM is tight |
+| GGUF fails to load | Update llama.cpp prebuilt release; confirm Instruct GGUF path |
 | No mic / no audio | Check Windows privacy settings for mic; confirm default input device |
-| Out of VRAM | Smaller Whisper size; smaller / lower-quant GGUF; don’t run HF 7B and llama-server together |
+| Out of VRAM | lower-quant GGUF |
 | Slow first start | Normal while models download; later starts should be faster |
