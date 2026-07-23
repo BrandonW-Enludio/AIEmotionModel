@@ -91,9 +91,7 @@ Example — Qwen2.5-7B-Instruct Q5 (good baseline):
 
 ```powershell
 pip install huggingface_hub
-hf download Qwen/Qwen2.5-7B-Instruct-GGUF `
-  qwen2.5-7b-instruct-q5_k_m.gguf `
-  --local-dir K:\AI\models
+hf download hf://bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/Meta-Llama-3.1-8B-Instruct-Q5_K_M.gguf --local-dir .
 ```
 
 Notes:
