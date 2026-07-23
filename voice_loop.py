@@ -8,7 +8,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 from pipeline_config import DEFAULT_PIPELINE, build_handlers
-from scenario import ACTIVE_SCENARIO_ID
+from scenario import ACTIVE_SCENARIO_ID, get_scenario
+from tension import TensionMachine
 
 
 class VoicePipeline:
@@ -25,6 +26,9 @@ class VoicePipeline:
         self.llm = handlers["llm"]
         self.tts = handlers["tts"]
         self.pipeline_config = handlers["config"]
+
+        self.scenario = get_scenario(ACTIVE_SCENARIO_ID)
+        self.tension = TensionMachine.from_scenario(self.scenario)
 
         if torch.cuda.is_available():
             print("\n========== GPU MEMORY ==========")
@@ -55,7 +59,8 @@ class VoicePipeline:
             f"STT={self.pipeline_config['stt']} "
             f"SER={self.pipeline_config['ser']} "
             f"LLM={self.pipeline_config['llm']} "
-            f"TTS={self.pipeline_config['tts']}"
+            f"TTS={self.pipeline_config['tts']} | "
+            f"tension={self.tension.level}/{self.tension.max_level}"
         )
 
     def audio_callback(self, indata, frames, time_info, status):
@@ -184,6 +189,20 @@ class VoicePipeline:
                                 f"{voice_emotion} ({voice_confidence:.2f})"
                             )
 
+                            tension_snap = self.tension.update(
+                                voice_emotion,
+                                voice_confidence,
+                            )
+                            bargain = (
+                                "bargain ON" if tension_snap.may_bargain else "bargain off"
+                            )
+                            print(
+                                f"📉 Tension: {tension_snap.level}/"
+                                f"{tension_snap.max_level} "
+                                f"({tension_snap.phase}, Δ{tension_snap.delta:+d}, "
+                                f"{bargain})"
+                            )
+
                             self.turn_id += 1
                             turn_id = self.turn_id
                             speech_start = self.speech_start_time
@@ -198,6 +217,9 @@ class VoicePipeline:
                                 "stt_ser_wall": stt_ser_wall,
                                 "llm_sentences": [],
                                 "llm_total": 0.0,
+                                "tension_level": tension_snap.level,
+                                "tension_phase": tension_snap.phase,
+                                "tension_outcome": tension_snap.outcome,
                             }
                             with self._pending_lock:
                                 self._pending_turns[turn_id] = turn
@@ -211,6 +233,7 @@ class VoicePipeline:
                                 user_text=text,
                                 voice_emotion=voice_emotion,
                                 voice_confidence=voice_confidence,
+                                tension_snapshot=tension_snap,
                             ):
                                 sentence = chunk["sentence"]
                                 sentence_index = chunk["sentence_index"]
@@ -254,6 +277,17 @@ class VoicePipeline:
                                 sentence_count = 1
 
                             self.tts.close_turn(turn_id, sentence_count)
+
+                            if tension_snap.outcome == "success":
+                                print(
+                                    "\n*** SCENARIO SUCCESS — tension stayed low. "
+                                    "De-escalation path unlocked. ***\n"
+                                )
+                            elif tension_snap.outcome == "failed":
+                                print(
+                                    "\n*** SCENARIO FAILED — tension peaked. "
+                                    "Negotiation broke down. ***\n"
+                                )
 
                         self.buffer = []
                         self.is_speaking = False

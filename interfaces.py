@@ -108,6 +108,7 @@ class LLMInterface(ABC):
         user_text: str,
         voice_emotion: str = "neu",
         voice_confidence: float = 0.0,
+        tension_snapshot=None,
     ) -> Iterator[dict]:
         """
         Yield sentence chunks:
@@ -153,6 +154,7 @@ class BlockingLLMAdapter(LLMInterface):
         user_text: str,
         voice_emotion: str = "neu",
         voice_confidence: float = 0.0,
+        tension_snapshot=None,
     ):
         start = time.time()
 
@@ -162,15 +164,23 @@ class BlockingLLMAdapter(LLMInterface):
                 user_text,
                 voice_emotion=voice_emotion,
                 voice_confidence=voice_confidence,
+                tension_snapshot=tension_snapshot,
             )
         except TypeError:
             try:
                 text = self.llm.generate_response(
                     user_text,
-                    emotion=voice_emotion,
+                    voice_emotion=voice_emotion,
+                    voice_confidence=voice_confidence,
                 )
             except TypeError:
-                text = self.llm.generate_response(user_text, voice_emotion)
+                try:
+                    text = self.llm.generate_response(
+                        user_text,
+                        emotion=voice_emotion,
+                    )
+                except TypeError:
+                    text = self.llm.generate_response(user_text, voice_emotion)
 
         total = time.time() - start
         text = (text or "").strip()

@@ -228,13 +228,21 @@ class OpenAICompatLLMHandler(LLMInterface):
         voice_emotion: str,
         voice_confidence: float,
         repair: bool = False,
+        tension_snapshot=None,
     ):
         hint = llm_emotion_hint(
             self.scenario,
             voice_emotion,
             voice_confidence,
         )
-        user_content = format_negotiator_turn(user_text, hint)
+        tension_block = ""
+        if tension_snapshot is not None:
+            tension_block = tension_snapshot.prompt_block()
+        user_content = format_negotiator_turn(
+            user_text,
+            hint,
+            tension_block=tension_block,
+        )
         if repair:
             user_content = f"{self.repair_instruction}\n\n{user_content}"
 
@@ -306,8 +314,19 @@ class OpenAICompatLLMHandler(LLMInterface):
     def _generate_once(self, messages) -> str:
         return self._chat_completions(messages)
 
-    def generate_response(self, user_text: str, voice_emotion="neu", voice_confidence=0.0):
-        messages = self._build_messages(user_text, voice_emotion, voice_confidence)
+    def generate_response(
+        self,
+        user_text: str,
+        voice_emotion="neu",
+        voice_confidence=0.0,
+        tension_snapshot=None,
+    ):
+        messages = self._build_messages(
+            user_text,
+            voice_emotion,
+            voice_confidence,
+            tension_snapshot=tension_snapshot,
+        )
         response = self._generate_once(messages)
         print(f"🤖 LLM raw reply: {response!r}")
 
@@ -319,6 +338,7 @@ class OpenAICompatLLMHandler(LLMInterface):
                 voice_emotion,
                 voice_confidence,
                 repair=True,
+                tension_snapshot=tension_snapshot,
             )
             response = self._generate_once(messages)
             print(f"🤖 LLM retry reply: {response!r}")
@@ -334,9 +354,16 @@ class OpenAICompatLLMHandler(LLMInterface):
                 voice_emotion,
                 voice_confidence,
             )
+            tension_block = ""
+            if tension_snapshot is not None:
+                tension_block = tension_snapshot.prompt_block()
             self.history.append({
                 "role": "user",
-                "content": format_negotiator_turn(user_text, hint),
+                "content": format_negotiator_turn(
+                    user_text,
+                    hint,
+                    tension_block=tension_block,
+                ),
             })
             self.history.append({"role": "assistant", "content": response})
             self._trim_history()
@@ -348,11 +375,13 @@ class OpenAICompatLLMHandler(LLMInterface):
         user_text: str,
         voice_emotion="neu",
         voice_confidence=0.0,
+        tension_snapshot=None,
     ):
         yield from self._stream_adapter.generate_response_stream(
             user_text,
             voice_emotion=voice_emotion,
             voice_confidence=voice_confidence,
+            tension_snapshot=tension_snapshot,
         )
 
 

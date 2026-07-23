@@ -37,7 +37,9 @@ WHO YOU ARE
 WHAT YOU WANT
 - You want a way out without getting shot.
 - You do not trust the police yet.
-- You will not casually free the hostage or drop the weapon.
+- You will not casually free the hostage or drop the weapon while tension is high.
+- When bargaining is unlocked (see the tension block on each turn), you MAY negotiate
+  a concrete deal and move toward standing down — still cautious, still in character.
 - You can negotiate: time, food, a clear exit, proof they are listening.
 
 HOW TO TALK
@@ -121,12 +123,13 @@ You always stay in this scene. The hostage is still with you. Answer the negotia
         },
     ],
     "llm_emotion_hints": {
-        "hap": "They sound oddly calm or upbeat — you distrust it; stay sharp.",
-        "neu": "They sound steady — stay wary and firm.",
-        "ang": "They sound angry — dig in, stay clipped, do not yell back.",
-        "sad": "They sound soft or pleading — stay hard, but less frantic.",
-        "fea": "They sound afraid — you feel more in control; speak colder.",
-        "fear": "They sound afraid — you feel more in control; speak colder.",
+        # Tone nudges the LLM; tension level (from SER) gates bargaining.
+        "hap": "They sound calm or upbeat — if tension is low, treat it as possible good faith; if high, stay sharp.",
+        "neu": "They sound steady — match their seriousness; easier to bargain when tension is low.",
+        "ang": "They sound angry — dig in, stay clipped; do not yell back.",
+        "sad": "They sound soft or pleading — less frantic; you can listen if tension allows.",
+        "fea": "They sound afraid — you feel more in control; do not mock them.",
+        "fear": "They sound afraid — you feel more in control; do not mock them.",
     },
     "tts_emotion_tags": {
         "hap": "",
@@ -139,6 +142,53 @@ You always stay in this scene. The hostage is still with you. Answer the negotia
         "neutral": "",
     },
     "emotion_confidence_floor": 0.45,
+    # SER-driven tension SM (see tension.py). No transcript intent keywords.
+    "tension": {
+        "max_level": 4,
+        "start_level": 3,
+        "bargain_at_or_below": 1,
+        "success_at_or_below": 1,
+        "success_streak_needed": 2,
+        "fail_at_or_above": 4,
+        "fail_streak_needed": 2,
+        "ser_deltas": {
+            "ang": 1,
+            "hap": 0,
+            "neu": -1,
+            "sad": -1,
+            "fea": 0,
+        },
+        "bands": {
+            4: {
+                "phase": "crisis",
+                "stance": "Highly agitated — clipped, distrustful, ready to dig in.",
+                "may_bargain": False,
+            },
+            3: {
+                "phase": "hostile",
+                "stance": "Wary and firm — test them; do not give ground easily.",
+                "may_bargain": False,
+            },
+            2: {
+                "phase": "guarded",
+                "stance": "Still armed and suspicious, but listening harder.",
+                "may_bargain": False,
+            },
+            1: {
+                "phase": "bargaining",
+                "stance": "Tension is down — you can name conditions and bargain.",
+                "may_bargain": True,
+            },
+            0: {
+                "phase": "resolution",
+                "stance": (
+                    "Lowest tension — if they keep offering a clear safe path, "
+                    "you may accept a concrete exit deal in character."
+                ),
+                "may_bargain": True,
+            },
+        },
+    },
 }
 
 
@@ -208,11 +258,16 @@ def tts_tag_for_emotion(
 def format_negotiator_turn(
     user_text: str,
     tone_hint: str,
+    tension_block: str = "",
 ) -> str:
     """Ground every turn in the scene so small models cannot 'forget' the setup."""
+    tension_section = ""
+    if tension_block:
+        tension_section = f"{tension_block}\n"
     return (
         "[Scene: you are still barricaded in the locked room with one hostage. "
         "You are armed. Police are outside. This is a live negotiation.]\n"
+        f"{tension_section}"
         f"Negotiator tone hint: {tone_hint}\n"
         f"Negotiator said: {user_text}\n"
         "Speak your next line aloud. It must clearly react to what they just said."
