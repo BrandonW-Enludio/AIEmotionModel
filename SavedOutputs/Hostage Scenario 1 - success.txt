@@ -1,0 +1,726 @@
+7/23/2025 - git history - tension
+
+PS C:\AI\emotion> venv/Scripts/activate
+(venv) PS C:\AI\emotion> python voice_loop.py
+Loading faster-whisper tiny model... (first time may take a while)
+✅ faster-whisper loaded!
+Loading SER model...
+Loading weights: 100%|█| 216/216 [00:00<00:00, 7027.00it/s, Materializing param=wav2
+✅ SER loaded on CUDA
+OPENAI_MODEL unset — discovering from /v1/models ...
+  using model id: K:\AI\models\Meta-Llama-3.1-8B-Instruct-Q5_K_M.gguf
+Loading openai_compat:K:\AI\models\Meta-Llama-3.1-8B-Instruct-Q5_K_M.gguf (OpenAI-compat, scenario-aware)...
+  base_url=http://127.0.0.1:8080/v1
+  model=K:\AI\models\Meta-Llama-3.1-8B-Instruct-Q5_K_M.gguf
+[ok] openai_compat:K:\AI\models\Meta-Llama-3.1-8B-Instruct-Q5_K_M.gguf ready | scenario=hostage_taker
+Loading Chatterbox-Turbo...
+Fetching 10 files: 100%|████████████████████████████████████| 10/10 [00:00<?, ?it/s]
+Download complete: :                                            |  0.00B            C:\AI\emotion\venv\Lib\site-packages\diffusers\models\lora.py:393: FutureWarning: `LoRACompatibleLinear` is deprecated and will be removed in version 1.0.0. Use of `LoRACompatibleLinear` is deprecated. Please switch to PEFT backend by installing PEFT: `pip install peft`.
+  deprecate("LoRACompatibleLinear", "1.0.0", deprecation_message)
+Download complete: :                                            |  0.00B
+Reconstruction complete: |                             |  0.00B /  0.00B
+loaded PerthNet (Implicit) at step 250,000
+✅ Chatterbox-Turbo loaded!
+💾 TTS WAV saving ON → C:\AI\emotion\recordings
+Preparing voice conditionals from C:\AI\emotion\voices\reference.wav...
+✅ Voice prompt ready: reference.wav
+
+========== GPU MEMORY ==========
+GPU: NVIDIA GeForce RTX 4080
+VRAM Allocated: 3.24 GB
+VRAM Reserved: 3.31 GB
+VRAM Total: 15.99 GB
+================================
+
+🎤 Pipeline ready | scenario=hostage_taker STT=whisper_tiny SER=wav2vec2_superb LLM=openai_compat TTS=chatterbox_turbo | tension=3/4
+Listening... Press Ctrl+C to stop.
+🟢 SPEECH STARTED
+📝 You said: Hey, how's it going?
+🎙️ Voice emotion: neu (0.86)
+📉 Tension: 2/4 (guarded, Δ-1, bargain off)
+⏱️ OpenAI-compat generate: 0.59s
+🤖 LLM raw reply: "That's not an answer to anything I've asked. How about you tell me what you're doing to keep your people from blowing this thing?"
+📤 LLM → TTS [1.0]: "That's not an answer to anything I've asked."
+📥 TTS enqueue [turn=1 sent=0 ser='neu' tag='']: raw="That's not an answer to anything I've asked." | speak="That's not an answer to anything I've asked."
+📤 LLM → TTS [1.1]: "How about you tell me what you're doing to keep your people from blowing this thing?"
+🔊 TTS generate [turn=1 sent=0]: "That's not an answer to anything I've asked."
+📥 TTS enqueue [turn=1 sent=1 ser=None tag='']: raw="How about you tell me what you're doing to keep your people from blowing this thing?" | speak="How about you tell me what you're doing to keep your people from blowing this thing?"
+  5%|██▎                                         | 52/1000 [00:00<00:07, 125.10it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 23.24it/s]
+🔊 TTS generate [turn=1 sent=1]: "How about you tell me what you're doing to keep your people from blowing this thing?"
+🔈 TTS playback [turn=1 sent=0]: "That's not an answer to anything I've asked."
+  9%|███▊                                        | 87/1000 [00:00<00:07, 126.77it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 31.85it/s]
+🔈 TTS playback [turn=1 sent=1]: "How about you tell me what you're doing to keep your people from blowing this thing?"
+💾 Saved TTS turn WAV: C:\AI\emotion\recordings\turn_1.wav
+
+========== PERFORMANCE ==========
+Task #1
+Models: whisper_tiny | wav2vec2_superb | openai_compat | chatterbox_turbo
+STT:              0.44s
+Emotion:          0.30s
+STT||SER wall:    0.44s  (was ~0.74s serial)
+LLM total:        0.59s
+Response Start:   1.83s  (speech end → first audio)
+TTS sent. 1:      gen 0.80s | audio 2.24s
+TTS sent. 2:      gap 0.000s | gen 0.85s | audio 3.64s
+End-to-End:       8.90s  (speech start → last audio)
+=================================
+
+🟢 SPEECH STARTED
+📝 You said: You think you're ready to bargain now?
+🎙️ Voice emotion: neu (0.71)
+📉 Tension: 1/4 (bargaining, Δ-1, bargain ON)
+⏱️ OpenAI-compat generate: 0.73s
+🤖 LLM raw reply: "I'm not just ready to bargain, I'm ready to hear something concrete. If you're serious about getting me out of here without a problem, tell me you're going to give me a clear path to the door and a guarantee that nobody will take a shot at me when I come out."
+📤 LLM → TTS [2.0]: "I'm not just ready to bargain."
+📥 TTS enqueue [turn=2 sent=0 ser='neu' tag='']: raw="I'm not just ready to bargain." | speak="I'm not just ready to bargain."
+📤 LLM → TTS [2.1]: "I'm ready to hear something concrete."
+🔊 TTS generate [turn=2 sent=0]: "I'm not just ready to bargain."
+📥 TTS enqueue [turn=2 sent=1 ser=None tag='']: raw="I'm ready to hear something concrete." | speak="I'm ready to hear something concrete."
+📤 LLM → TTS [2.2]: "If you're serious about getting me out of here without a problem, tell me you're going to give me a clear path to the door and a guarantee that nobody will take a shot at me when I come out."
+📥 TTS enqueue [turn=2 sent=2 ser=None tag='']: raw="If you're serious about getting me out of here without a problem, tell me you're going to give me a clear path to the door and a guarantee that nobody will take a shot at me when I come out." | speak="If you're serious about getting me out of here without a problem, tell me you're going to give me a clear path to the door and a guarantee that nobody will take a shot at me when I come out."
+  4%|█▊                                          | 41/1000 [00:00<00:07, 131.17it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 35.05it/s]
+🔊 TTS generate [turn=2 sent=1]: "I'm ready to hear something concrete."
+🔈 TTS playback [turn=2 sent=0]: "I'm not just ready to bargain."
+  5%|██▎                                         | 52/1000 [00:00<00:07, 128.96it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 35.39it/s]
+🔊 TTS generate [turn=2 sent=2]: "If you're serious about getting me out of here without a problem, tell me you're going to give me a clear path to the door and a guarantee that nobody will take a shot at me when I come out."
+ 18%|███████▌                                   | 175/1000 [00:01<00:06, 130.56it/s]🔈 TTS playback [turn=2 sent=1]: "I'm ready to hear something concrete."
+ 25%|██████████▊                                | 252/1000 [00:01<00:05, 129.64it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 33.64it/s]
+🔈 TTS playback [turn=2 sent=2]: "If you're serious about getting me out of here without a problem, tell me you're going to give me a clear path to the door and a guarantee that nobody will take a shot at me when I come out."
+💾 Saved TTS turn WAV: C:\AI\emotion\recordings\turn_2.wav
+
+========== PERFORMANCE ==========
+Task #2
+Models: whisper_tiny | wav2vec2_superb | openai_compat | chatterbox_turbo
+STT:              0.15s
+Emotion:          0.08s
+STT||SER wall:    0.15s  (was ~0.23s serial)
+LLM total:        0.73s
+Response Start:   1.33s  (speech end → first audio)
+TTS sent. 1:      gen 0.44s | audio 1.80s
+TTS sent. 2:      gap 0.000s | gen 0.51s | audio 2.24s
+TTS sent. 3:      gap 0.000s | gen 2.16s | audio 10.24s
+End-to-End:       17.45s  (speech start → last audio)
+=================================
+
+🟢 SPEECH STARTED
+📝 You said: Alright, we're negotiating now. What would you like us to do?
+🎙️ Voice emotion: hap (0.58)
+📉 Tension: 1/4 (bargaining, Δ+0, bargain ON)
+⏱️ OpenAI-compat generate: 0.83s
+🤖 LLM raw reply: "That's a start. Now, I want you to have someone come in here with a phone, and I want to hear from the chief of police directly. I want him to tell me, in person, that I'll be able to walk out of here with my insurance intact, and that nobody will try to take a shot at me when I do."
+📤 LLM → TTS [3.0]: "That's a start."
+📥 TTS enqueue [turn=3 sent=0 ser='hap' tag='']: raw="That's a start." | speak="That's a start."
+📤 LLM → TTS [3.1]: 'Now, I want you to have someone come in here with a phone, and I want to hear from the chief of police directly.'
+📥 TTS enqueue [turn=3 sent=1 ser=None tag='']: raw='Now, I want you to have someone come in here with a phone, and I want to hear from the chief of police directly.' | speak='Now, I want you to have someone come in here with a phone, and I want to hear from the chief of police directly.'
+🔊 TTS generate [turn=3 sent=0]: "That's a start."
+📤 LLM → TTS [3.2]: "I want him to tell me, in person, that I'll be able to walk out of here with my insurance intact, and that nobody will try to take a shot at me when I do."
+📥 TTS enqueue [turn=3 sent=2 ser=None tag='']: raw="I want him to tell me, in person, that I'll be able to walk out of here with my insurance intact, and that nobody will try to take a shot at me when I do." | speak="I want him to tell me, in person, that I'll be able to walk out of here with my insurance intact, and that nobody will try to take a shot at me when I do."
+
+*** SCENARIO SUCCESS — tension stayed low. De-escalation path unlocked. ***
+
+  2%|█                                           | 25/1000 [00:00<00:09, 104.55it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 24.23it/s]
+🔊 TTS generate [turn=3 sent=1]: 'Now, I want you to have someone come in here with a phone, and I want to hear from the chief of police directly.'
+🔈 TTS playback [turn=3 sent=0]: "That's a start."
+ 16%|██████▉                                    | 160/1000 [00:01<00:08, 103.86it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 26.01it/s]
+🔊 TTS generate [turn=3 sent=2]: "I want him to tell me, in person, that I'll be able to walk out of here with my insurance intact, and that nobody will try to take a shot at me when I do."
+🔈 TTS playback [turn=3 sent=1]: 'Now, I want you to have someone come in here with a phone, and I want to hear from the chief of police directly.'
+ 20%|████████▊                                  | 205/1000 [00:01<00:07, 103.47it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 29.46it/s]
+🔈 TTS playback [turn=3 sent=2]: "I want him to tell me, in person, that I'll be able to walk out of here with my insurance intact, and that nobody will try to take a shot at me when I do."
+💾 Saved TTS turn WAV: C:\AI\emotion\recordings\turn_3.wav
+
+========== PERFORMANCE ==========
+Task #3
+Models: whisper_tiny | wav2vec2_superb | openai_compat | chatterbox_turbo
+STT:              0.19s
+Emotion:          0.09s
+STT||SER wall:    0.19s  (was ~0.28s serial)
+LLM total:        0.83s
+Response Start:   1.42s  (speech end → first audio)
+TTS sent. 1:      gen 0.40s | audio 1.16s
+TTS sent. 2:      gap 0.515s | gen 1.75s | audio 6.56s
+TTS sent. 3:      gap 0.002s | gen 2.20s | audio 8.36s
+End-to-End:       21.23s  (speech start → last audio)
+=================================
+
+🟢 SPEECH STARTED
+📝 You said: Alright, we're sending someone in with the phone.  Let us know when you get it.
+🎙️ Voice emotion: neu (0.83)
+📉 Tension: 1/4 (bargaining, Δ-1, bargain ON)
+⏱️ OpenAI-compat generate: 0.56s
+🤖 LLM raw reply: "Hold up, I don't want some low-level officer coming in here with a phone. I want the chief. I want to hear his voice, not some middleman. If you're serious about this, get him on the line now."
+📤 LLM → TTS [4.0]: 'Hold up.'
+📥 TTS enqueue [turn=4 sent=0 ser='neu' tag='']: raw='Hold up.' | speak='Hold up.'
+📤 LLM → TTS [4.1]: "I don't want some low-level officer coming in here with a phone."
+🔊 TTS generate [turn=4 sent=0]: 'Hold up.'
+📥 TTS enqueue [turn=4 sent=1 ser=None tag='']: raw="I don't want some low-level officer coming in here with a phone." | speak="I don't want some low-level officer coming in here with a phone."
+📤 LLM → TTS [4.2]: 'I want the chief.'
+📥 TTS enqueue [turn=4 sent=2 ser=None tag='']: raw='I want the chief.' | speak='I want the chief.'
+📤 LLM → TTS [4.3]: 'I want to hear his voice, not some middleman.'
+📥 TTS enqueue [turn=4 sent=3 ser=None tag='']: raw='I want to hear his voice, not some middleman.' | speak='I want to hear his voice, not some middleman.'
+📤 LLM → TTS [4.4]: "If you're serious about this, get him on the line now."
+📥 TTS enqueue [turn=4 sent=4 ser=None tag='']: raw="If you're serious about this, get him on the line now." | speak="If you're serious about this, get him on the line now."
+
+*** SCENARIO SUCCESS — tension stayed low. De-escalation path unlocked. ***
+
+  2%|▋                                           | 16/1000 [00:00<00:08, 120.47it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 31.72it/s]
+🔊 TTS generate [turn=4 sent=1]: "I don't want some low-level officer coming in here with a phone."
+🔈 TTS playback [turn=4 sent=0]: 'Hold up.'
+  8%|███▌                                        | 80/1000 [00:00<00:07, 129.25it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 33.37it/s]
+🔊 TTS generate [turn=4 sent=2]: 'I want the chief.'
+  1%|▌                                           | 13/1000 [00:00<00:07, 126.91it/s]🔈 TTS playback [turn=4 sent=1]: "I don't want some low-level officer coming in here with a phone."
+  3%|█▍                                          | 33/1000 [00:00<00:07, 124.07it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 34.04it/s]
+🔊 TTS generate [turn=4 sent=3]: 'I want to hear his voice, not some middleman.'
+  7%|██▉                                         | 66/1000 [00:00<00:07, 129.83it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 32.93it/s]
+🔊 TTS generate [turn=4 sent=4]: "If you're serious about this, get him on the line now."
+  8%|███▎                                        | 76/1000 [00:00<00:08, 110.03it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 34.01it/s]
+🔈 TTS playback [turn=4 sent=2]: 'I want the chief.'
+🔈 TTS playback [turn=4 sent=3]: 'I want to hear his voice, not some middleman.'
+🔈 TTS playback [turn=4 sent=4]: "If you're serious about this, get him on the line now."
+💾 Saved TTS turn WAV: C:\AI\emotion\recordings\turn_4.wav
+
+========== PERFORMANCE ==========
+Task #4
+Models: whisper_tiny | wav2vec2_superb | openai_compat | chatterbox_turbo
+STT:              0.22s
+Emotion:          0.09s
+STT||SER wall:    0.22s  (was ~0.31s serial)
+LLM total:        0.56s
+Response Start:   1.04s  (speech end → first audio)
+TTS sent. 1:      gen 0.26s | audio 0.80s
+TTS sent. 2:      gap 0.001s | gen 0.77s | audio 3.36s
+TTS sent. 3:      gap 0.001s | gen 0.39s | audio 1.48s
+TTS sent. 4:      gap 0.001s | gen 0.65s | audio 2.80s
+TTS sent. 5:      gap 0.001s | gen 0.84s | audio 3.20s
+End-to-End:       16.20s  (speech start → last audio)
+=================================
+
+🟢 SPEECH STARTED
+📝 You said: Hello, this is the chief here. I'm bringing in the phone.
+🎙️ Voice emotion: hap (0.63)
+📉 Tension: 1/4 (bargaining, Δ+0, bargain ON)
+⏱️ OpenAI-compat generate: 0.86s
+🤖 LLM raw reply: "Chief, I don't have time for small talk. I want you to tell me that if I walk out of here with my insurance intact, nobody will try to take a shot at me. I want you to give me a guarantee, in writing, that you'll stand down your SWAT team and let me leave peacefully. Can you do that for me?"
+📤 LLM → TTS [5.0]: "Chief, I don't have time for small talk."
+📥 TTS enqueue [turn=5 sent=0 ser='hap' tag='']: raw="Chief, I don't have time for small talk." | speak="Chief, I don't have time for small talk."
+📤 LLM → TTS [5.1]: 'I want you to tell me that if I walk out of here with my insurance intact, nobody will try to take a shot at me.'
+🔊 TTS generate [turn=5 sent=0]: "Chief, I don't have time for small talk."
+📥 TTS enqueue [turn=5 sent=1 ser=None tag='']: raw='I want you to tell me that if I walk out of here with my insurance intact, nobody will try to take a shot at me.' | speak='I want you to tell me that if I walk out of here with my insurance intact, nobody will try to take a shot at me.'
+📤 LLM → TTS [5.2]: "I want you to give me a guarantee, in writing, that you'll stand down your SWAT team and let me leave peacefully."
+📥 TTS enqueue [turn=5 sent=2 ser=None tag='']: raw="I want you to give me a guarantee, in writing, that you'll stand down your SWAT team and let me leave peacefully." | speak="I want you to give me a guarantee, in writing, that you'll stand down your SWAT team and let me leave peacefully."
+📤 LLM → TTS [5.3]: 'Can you do that for me?'
+📥 TTS enqueue [turn=5 sent=3 ser=None tag='']: raw='Can you do that for me?' | speak='Can you do that for me?'
+
+*** SCENARIO SUCCESS — tension stayed low. De-escalation path unlocked. ***
+
+  6%|██▍                                         | 56/1000 [00:00<00:08, 116.93it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 33.81it/s]
+🔊 TTS generate [turn=5 sent=1]: 'I want you to tell me that if I walk out of here with my insurance intact, nobody will try to take a shot at me.'
+🔈 TTS playback [turn=5 sent=0]: "Chief, I don't have time for small talk."
+ 15%|██████▎                                    | 148/1000 [00:01<00:06, 129.65it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 34.42it/s]
+🔊 TTS generate [turn=5 sent=2]: "I want you to give me a guarantee, in writing, that you'll stand down your SWAT team and let me leave peacefully."
+ 14%|██████                                     | 142/1000 [00:01<00:06, 127.55it/s]🔈 TTS playback [turn=5 sent=1]: 'I want you to tell me that if I walk out of here with my insurance intact, nobody will try to take a shot at me.'
+ 14%|██████                                     | 142/1000 [00:01<00:07, 121.39it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 36.23it/s]
+🔊 TTS generate [turn=5 sent=3]: 'Can you do that for me?'
+  3%|█▏                                          | 28/1000 [00:00<00:07, 127.17it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 33.46it/s]
+🔈 TTS playback [turn=5 sent=2]: "I want you to give me a guarantee, in writing, that you'll stand down your SWAT team and let me leave peacefully."
+🔈 TTS playback [turn=5 sent=3]: 'Can you do that for me?'
+💾 Saved TTS turn WAV: C:\AI\emotion\recordings\turn_5.wav
+
+========== PERFORMANCE ==========
+Task #5
+Models: whisper_tiny | wav2vec2_superb | openai_compat | chatterbox_turbo
+STT:              0.16s
+Emotion:          0.09s
+STT||SER wall:    0.16s  (was ~0.25s serial)
+LLM total:        0.86s
+Response Start:   1.64s  (speech end → first audio)
+TTS sent. 1:      gen 0.62s | audio 2.40s
+TTS sent. 2:      gap 0.000s | gen 1.31s | audio 6.08s
+TTS sent. 3:      gap 0.002s | gen 1.34s | audio 5.84s
+TTS sent. 4:      gap 0.001s | gen 0.35s | audio 1.28s
+End-to-End:       20.11s  (speech start → last audio)
+=================================
+
+🟢 SPEECH STARTED
+📝 You said: I promise you all those things.
+🎙️ Voice emotion: neu (0.98)
+📉 Tension: 1/4 (bargaining, Δ-1, bargain ON)
+⏱️ OpenAI-compat generate: 0.84s
+🤖 LLM raw reply: "Save it for the lawyers, Chief. I need something in writing. I need to see it on paper. Can you arrange for a piece of paper and a pen to be slipped into this room? I want to see your signature on that paper, and I want to know that it's a real promise, not just empty words."
+📤 LLM → TTS [6.0]: 'Save it for the lawyers, Chief.'
+📥 TTS enqueue [turn=6 sent=0 ser='neu' tag='']: raw='Save it for the lawyers, Chief.' | speak='Save it for the lawyers, Chief.'
+📤 LLM → TTS [6.1]: 'I need something in writing.'
+🔊 TTS generate [turn=6 sent=0]: 'Save it for the lawyers, Chief.'
+📥 TTS enqueue [turn=6 sent=1 ser=None tag='']: raw='I need something in writing.' | speak='I need something in writing.'
+📤 LLM → TTS [6.2]: 'I need to see it on paper.'
+📥 TTS enqueue [turn=6 sent=2 ser=None tag='']: raw='I need to see it on paper.' | speak='I need to see it on paper.'
+📤 LLM → TTS [6.3]: 'Can you arrange for a piece of paper and a pen to be slipped into this room?'
+📥 TTS enqueue [turn=6 sent=3 ser=None tag='']: raw='Can you arrange for a piece of paper and a pen to be slipped into this room?' | speak='Can you arrange for a piece of paper and a pen to be slipped into this room?'
+📤 LLM → TTS [6.4]: "I want to see your signature on that paper, and I want to know that it's a real promise, not just empty words."
+📥 TTS enqueue [turn=6 sent=4 ser=None tag='']: raw="I want to see your signature on that paper, and I want to know that it's a real promise, not just empty words." | speak="I want to see your signature on that paper, and I want to know that it's a real promise, not just empty words."
+
+*** SCENARIO SUCCESS — tension stayed low. De-escalation path unlocked. ***
+
+🟢 SPEECH STARTED
+  5%|██                                          | 46/1000 [00:00<00:07, 128.93it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 35.12it/s]
+🔊 TTS generate [turn=6 sent=1]: 'I need something in writing.'
+🔈 TTS playback [turn=6 sent=0]: 'Save it for the lawyers, Chief.'
+  4%|█▋                                          | 37/1000 [00:00<00:07, 126.16it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 33.41it/s]
+🔊 TTS generate [turn=6 sent=2]: 'I need to see it on paper.'
+  5%|██                                          | 46/1000 [00:00<00:07, 126.64it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 36.64it/s]
+🔊 TTS generate [turn=6 sent=3]: 'Can you arrange for a piece of paper and a pen to be slipped into this room?'
+ 10%|████▏                                       | 95/1000 [00:00<00:06, 131.03it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 33.94it/s]
+🔊 TTS generate [turn=6 sent=4]: "I want to see your signature on that paper, and I want to know that it's a real promise, not just empty words."
+  3%|█▏                                          | 27/1000 [00:00<00:07, 130.32it/s]🔈 TTS playback [turn=6 sent=1]: 'I need something in writing.'
+ 17%|███████▍                                   | 173/1000 [00:01<00:06, 127.97it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 34.79it/s]
+🔈 TTS playback [turn=6 sent=2]: 'I need to see it on paper.'
+🔈 TTS playback [turn=6 sent=3]: 'Can you arrange for a piece of paper and a pen to be slipped into this room?'
+🔈 TTS playback [turn=6 sent=4]: "I want to see your signature on that paper, and I want to know that it's a real promise, not just empty words."
+💾 Saved TTS turn WAV: C:\AI\emotion\recordings\turn_6.wav
+
+========== PERFORMANCE ==========
+Task #6
+Models: whisper_tiny | wav2vec2_superb | openai_compat | chatterbox_turbo
+STT:              0.13s
+Emotion:          0.08s
+STT||SER wall:    0.13s  (was ~0.21s serial)
+LLM total:        0.85s
+Response Start:   1.47s  (speech end → first audio)
+TTS sent. 1:      gen 0.49s | audio 2.00s
+TTS sent. 2:      gap 0.000s | gen 0.42s | audio 1.64s
+TTS sent. 3:      gap 0.000s | gen 0.47s | audio 2.00s
+TTS sent. 4:      gap 0.001s | gen 0.88s | audio 3.96s
+TTS sent. 5:      gap 0.001s | gen 1.53s | audio 7.08s
+End-to-End:       20.53s  (speech start → last audio)
+=================================
+
+📝 You said: Alright, I'm giving you the piece of paper under the door now, it has my signature on it.
+🎙️ Voice emotion: neu (0.97)
+📉 Tension: 1/4 (bargaining, Δ-1, bargain ON)
+⏱️ OpenAI-compat generate: 0.58s
+🤖 LLM raw reply: "Slipping it under the door isn't good enough. I want to see it in my hand. I want to see the Chief's signature and the words in writing. Open the door, Chief. Open the door and let me see it for myself."
+📤 LLM → TTS [7.0]: "Slipping it under the door isn't good enough."
+📥 TTS enqueue [turn=7 sent=0 ser='neu' tag='']: raw="Slipping it under the door isn't good enough." | speak="Slipping it under the door isn't good enough."
+📤 LLM → TTS [7.1]: 'I want to see it in my hand.'
+🔊 TTS generate [turn=7 sent=0]: "Slipping it under the door isn't good enough."
+📥 TTS enqueue [turn=7 sent=1 ser=None tag='']: raw='I want to see it in my hand.' | speak='I want to see it in my hand.'
+📤 LLM → TTS [7.2]: "I want to see the Chief's signature and the words in writing."
+📥 TTS enqueue [turn=7 sent=2 ser=None tag='']: raw="I want to see the Chief's signature and the words in writing." | speak="I want to see the Chief's signature and the words in writing."
+📤 LLM → TTS [7.3]: 'Open the door, Chief.'
+📥 TTS enqueue [turn=7 sent=3 ser=None tag='']: raw='Open the door, Chief.' | speak='Open the door, Chief.'
+📤 LLM → TTS [7.4]: 'Open the door and let me see it for myself.'
+📥 TTS enqueue [turn=7 sent=4 ser=None tag='']: raw='Open the door and let me see it for myself.' | speak='Open the door and let me see it for myself.'
+
+*** SCENARIO SUCCESS — tension stayed low. De-escalation path unlocked. ***
+
+  6%|██▊                                         | 64/1000 [00:00<00:07, 130.68it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 32.75it/s]
+🔊 TTS generate [turn=7 sent=1]: 'I want to see it in my hand.'
+🔈 TTS playback [turn=7 sent=0]: "Slipping it under the door isn't good enough."
+  4%|█▊                                          | 40/1000 [00:00<00:07, 125.42it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 33.08it/s]
+🔊 TTS generate [turn=7 sent=2]: "I want to see the Chief's signature and the words in writing."
+  6%|██▊                                         | 64/1000 [00:00<00:07, 130.03it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 37.03it/s]
+🔊 TTS generate [turn=7 sent=3]: 'Open the door, Chief.'
+  3%|█▎                                          | 29/1000 [00:00<00:07, 125.78it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 32.04it/s]
+🔊 TTS generate [turn=7 sent=4]: 'Open the door and let me see it for myself.'
+  6%|██▍                                         | 55/1000 [00:00<00:07, 127.63it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 34.58it/s]
+🔈 TTS playback [turn=7 sent=1]: 'I want to see it in my hand.'
+🔈 TTS playback [turn=7 sent=2]: "I want to see the Chief's signature and the words in writing."
+🔈 TTS playback [turn=7 sent=3]: 'Open the door, Chief.'
+🔈 TTS playback [turn=7 sent=4]: 'Open the door and let me see it for myself.'
+💾 Saved TTS turn WAV: C:\AI\emotion\recordings\turn_7.wav
+
+========== PERFORMANCE ==========
+Task #7
+Models: whisper_tiny | wav2vec2_superb | openai_compat | chatterbox_turbo
+STT:              0.22s
+Emotion:          0.09s
+STT||SER wall:    0.23s  (was ~0.32s serial)
+LLM total:        0.59s
+Response Start:   1.44s  (speech end → first audio)
+TTS sent. 1:      gen 0.63s | audio 2.72s
+TTS sent. 2:      gap 0.000s | gen 0.45s | audio 1.76s
+TTS sent. 3:      gap 0.000s | gen 0.60s | audio 2.72s
+TTS sent. 4:      gap 0.000s | gen 0.36s | audio 1.32s
+TTS sent. 5:      gap 0.000s | gen 0.56s | audio 2.36s
+End-to-End:       35.97s  (speech start → last audio)
+=================================
+
+🟢 SPEECH STARTED
+📝 You said: Okay, this is the chief here.  I'm opening the door now.  I'm gonna give you the piece of paper  with my signature on it.
+🎙️ Voice emotion: neu (0.86)
+📉 Tension: 1/4 (bargaining, Δ-1, bargain ON)
+⏱️ OpenAI-compat generate: 1.24s
+🤖 LLM raw reply: "Wait, wait, wait. Don't open the door until I see that paper. I want to see it in my hand, and I want to make sure it's real. You're going to hand it to me through the gap under the door, and I'm going to take it from there. Then, and only then, will I let the hostage go."
+📤 LLM → TTS [8.0]: 'Wait, wait, wait.'
+📥 TTS enqueue [turn=8 sent=0 ser='neu' tag='']: raw='Wait, wait, wait.' | speak='Wait, wait, wait.'
+📤 LLM → TTS [8.1]: "Don't open the door until I see that paper."
+🔊 TTS generate [turn=8 sent=0]: 'Wait, wait, wait.'
+📥 TTS enqueue [turn=8 sent=1 ser=None tag='']: raw="Don't open the door until I see that paper." | speak="Don't open the door until I see that paper."
+📤 LLM → TTS [8.2]: "I want to see it in my hand, and I want to make sure it's real."
+📥 TTS enqueue [turn=8 sent=2 ser=None tag='']: raw="I want to see it in my hand, and I want to make sure it's real." | speak="I want to see it in my hand, and I want to make sure it's real."
+📤 LLM → TTS [8.3]: "You're going to hand it to me through the gap under the door, and I'm going to take it from there."
+📥 TTS enqueue [turn=8 sent=3 ser=None tag='']: raw="You're going to hand it to me through the gap under the door, and I'm going to take it from there." | speak="You're going to hand it to me through the gap under the door, and I'm going to take it from there."
+📤 LLM → TTS [8.4]: 'Then, and only then, will I let the hostage go.'
+📥 TTS enqueue [turn=8 sent=4 ser=None tag='']: raw='Then, and only then, will I let the hostage go.' | speak='Then, and only then, will I let the hostage go.'
+
+*** SCENARIO SUCCESS — tension stayed low. De-escalation path unlocked. ***
+
+  2%|▉                                            | 20/1000 [00:00<00:10, 95.98it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 24.75it/s]
+🔊 TTS generate [turn=8 sent=1]: "Don't open the door until I see that paper."
+🔈 TTS playback [turn=8 sent=0]: 'Wait, wait, wait.'
+  6%|██▋                                         | 61/1000 [00:00<00:08, 112.68it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 26.22it/s]
+🔊 TTS generate [turn=8 sent=2]: "I want to see it in my hand, and I want to make sure it's real."
+  2%|█                                           | 24/1000 [00:00<00:08, 110.09it/s]🔈 TTS playback [turn=8 sent=1]: "Don't open the door until I see that paper."
+  9%|████▏                                       | 94/1000 [00:00<00:08, 109.08it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 31.14it/s]
+🔊 TTS generate [turn=8 sent=3]: "You're going to hand it to me through the gap under the door, and I'm going to take it from there."
+ 13%|█████▋                                     | 131/1000 [00:01<00:07, 110.88it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 28.73it/s]
+🔊 TTS generate [turn=8 sent=4]: 'Then, and only then, will I let the hostage go.'
+  6%|██▊                                         | 63/1000 [00:00<00:08, 110.48it/s]🔈 TTS playback [turn=8 sent=2]: "I want to see it in my hand, and I want to make sure it's real."
+  7%|██▉                                         | 68/1000 [00:00<00:08, 110.55it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 31.61it/s]
+🔈 TTS playback [turn=8 sent=3]: "You're going to hand it to me through the gap under the door, and I'm going to take it from there."
+🔈 TTS playback [turn=8 sent=4]: 'Then, and only then, will I let the hostage go.'
+💾 Saved TTS turn WAV: C:\AI\emotion\recordings\turn_8.wav
+
+========== PERFORMANCE ==========
+Task #8
+Models: whisper_tiny | wav2vec2_superb | openai_compat | chatterbox_turbo
+STT:              0.28s
+Emotion:          0.10s
+STT||SER wall:    0.29s  (was ~0.38s serial)
+LLM total:        1.24s
+Response Start:   1.90s  (speech end → first audio)
+TTS sent. 1:      gen 0.37s | audio 0.96s
+TTS sent. 2:      gap 0.001s | gen 0.71s | audio 2.60s
+TTS sent. 3:      gap 0.000s | gen 1.03s | audio 3.92s
+TTS sent. 4:      gap 0.002s | gen 1.36s | audio 5.40s
+TTS sent. 5:      gap 0.000s | gen 0.77s | audio 2.88s
+End-to-End:       23.03s  (speech start → last audio)
+=================================
+
+🟢 SPEECH STARTED
+📝 You said: Okay, I'm slipping it through the gap of the door.  Also, this is still the chief.
+🎙️ Voice emotion: neu (0.51)
+📉 Tension: 1/4 (bargaining, Δ-1, bargain ON)
+⏱️ OpenAI-compat generate: 1.21s
+🤖 LLM raw reply: "*takes the paper through the gap* Alright, let me see this. *examines the paper* Okay, it's got your signature on it. Now, I want you to listen to me, Chief. I want to know that I can trust you to keep your word. I want to know that when I walk out of here, nobody's going to take a shot at me. Can you guarantee that to me, in person?"
+📤 LLM → TTS [9.0]: '*takes the paper through the gap* Alright.'
+📥 TTS enqueue [turn=9 sent=0 ser='neu' tag='']: raw='*takes the paper through the gap* Alright.' | speak='*takes the paper through the gap* Alright.'
+📤 LLM → TTS [9.1]: 'Let me see this.'
+📥 TTS enqueue [turn=9 sent=1 ser=None tag='']: raw='Let me see this.' | speak='Let me see this.'
+🔊 TTS generate [turn=9 sent=0]: '*takes the paper through the gap* Alright.'
+📤 LLM → TTS [9.2]: "*examines the paper* Okay, it's got your signature on it."
+📥 TTS enqueue [turn=9 sent=2 ser=None tag='']: raw="*examines the paper* Okay, it's got your signature on it." | speak="*examines the paper* Okay, it's got your signature on it."
+📤 LLM → TTS [9.3]: 'Now, I want you to listen to me, Chief.'
+📥 TTS enqueue [turn=9 sent=3 ser=None tag='']: raw='Now, I want you to listen to me, Chief.' | speak='Now, I want you to listen to me, Chief.'
+📤 LLM → TTS [9.4]: 'I want to know that I can trust you to keep your word.'
+📥 TTS enqueue [turn=9 sent=4 ser=None tag='']: raw='I want to know that I can trust you to keep your word.' | speak='I want to know that I can trust you to keep your word.'
+📤 LLM → TTS [9.5]: "I want to know that when I walk out of here, nobody's going to take a shot at me."
+📥 TTS enqueue [turn=9 sent=5 ser=None tag='']: raw="I want to know that when I walk out of here, nobody's going to take a shot at me." | speak="I want to know that when I walk out of here, nobody's going to take a shot at me."
+📤 LLM → TTS [9.6]: 'Can you guarantee that to me, in person?'
+📥 TTS enqueue [turn=9 sent=6 ser=None tag='']: raw='Can you guarantee that to me, in person?' | speak='Can you guarantee that to me, in person?'
+
+*** SCENARIO SUCCESS — tension stayed low. De-escalation path unlocked. ***
+
+  6%|██▋                                         | 61/1000 [00:00<00:08, 110.63it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 27.30it/s]
+🔊 TTS generate [turn=9 sent=1]: 'Let me see this.'
+🔈 TTS playback [turn=9 sent=0]: '*takes the paper through the gap* Alright.'
+  2%|█                                           | 25/1000 [00:00<00:09, 103.70it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 28.76it/s]
+🔊 TTS generate [turn=9 sent=2]: "*examines the paper* Okay, it's got your signature on it."
+  9%|████                                        | 92/1000 [00:00<00:07, 122.19it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 35.06it/s]
+🔊 TTS generate [turn=9 sent=3]: 'Now, I want you to listen to me, Chief.'
+  6%|██▊                                         | 63/1000 [00:00<00:07, 120.80it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 30.39it/s]
+🔊 TTS generate [turn=9 sent=4]: 'I want to know that I can trust you to keep your word.'
+  6%|██▌                                         | 59/1000 [00:00<00:07, 118.83it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 32.47it/s]
+🔊 TTS generate [turn=9 sent=5]: "I want to know that when I walk out of here, nobody's going to take a shot at me."
+  0%|                                                      | 0/1000 [00:00<?, ?it/s]🔈 TTS playback [turn=9 sent=1]: 'Let me see this.'
+ 10%|████▏                                       | 96/1000 [00:00<00:07, 121.98it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 31.18it/s]
+🔊 TTS generate [turn=9 sent=6]: 'Can you guarantee that to me, in person?'
+  4%|█▊                                          | 40/1000 [00:00<00:07, 129.27it/s]🔈 TTS playback [turn=9 sent=2]: "*examines the paper* Okay, it's got your signature on it."
+  7%|██▉                                         | 68/1000 [00:00<00:07, 126.12it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 30.70it/s]
+🔈 TTS playback [turn=9 sent=3]: 'Now, I want you to listen to me, Chief.'
+🔈 TTS playback [turn=9 sent=4]: 'I want to know that I can trust you to keep your word.'
+🔈 TTS playback [turn=9 sent=5]: "I want to know that when I walk out of here, nobody's going to take a shot at me."
+🔈 TTS playback [turn=9 sent=6]: 'Can you guarantee that to me, in person?'
+💾 Saved TTS turn WAV: C:\AI\emotion\recordings\turn_9.wav
+
+========== PERFORMANCE ==========
+Task #9
+Models: whisper_tiny | wav2vec2_superb | openai_compat | chatterbox_turbo
+STT:              0.23s
+Emotion:          0.09s
+STT||SER wall:    0.23s  (was ~0.32s serial)
+LLM total:        1.21s
+Response Start:   2.13s  (speech end → first audio)
+TTS sent. 1:      gen 0.69s | audio 2.60s
+TTS sent. 2:      gap 0.000s | gen 0.37s | audio 1.16s
+TTS sent. 3:      gap 0.000s | gen 0.90s | audio 3.84s
+TTS sent. 4:      gap 0.001s | gen 0.67s | audio 2.68s
+TTS sent. 5:      gap 0.001s | gen 0.64s | audio 2.52s
+TTS sent. 6:      gap 0.001s | gen 0.95s | audio 4.00s
+TTS sent. 7:      gap 0.000s | gen 0.67s | audio 2.88s
+End-to-End:       26.17s  (speech start → last audio)
+=================================
+
+🟢 SPEECH STARTED
+📝 You said: I will personally come and walk you out the door.
+🎙️ Voice emotion: neu (0.90)
+📉 Tension: 1/4 (bargaining, Δ-1, bargain ON)
+⏱️ OpenAI-compat generate: 1.38s
+🤖 LLM raw reply: "That's what I want to hear, Chief. Alright, here's what's going to happen. The hostage is going to walk out of this room first, and you're going to escort them to safety. Then, I'm going to follow, with you right behind me. I want to see your face, I want to see your badge, and I want to see the SWAT team stand down. Can you make that happen, Chief?"
+📤 LLM → TTS [10.0]: "That's what I want to hear, Chief."
+📥 TTS enqueue [turn=10 sent=0 ser='neu' tag='']: raw="That's what I want to hear, Chief." | speak="That's what I want to hear, Chief."
+📤 LLM → TTS [10.1]: "Alright, here's what's going to happen."
+📥 TTS enqueue [turn=10 sent=1 ser=None tag='']: raw="Alright, here's what's going to happen." | speak="Alright, here's what's going to happen."
+📤 LLM → TTS [10.2]: "The hostage is going to walk out of this room first, and you're going to escort them to safety."
+🔊 TTS generate [turn=10 sent=0]: "That's what I want to hear, Chief."
+📥 TTS enqueue [turn=10 sent=2 ser=None tag='']: raw="The hostage is going to walk out of this room first, and you're going to escort them to safety." | speak="The hostage is going to walk out of this room first, and you're going to escort them to safety."
+📤 LLM → TTS [10.3]: "Then, I'm going to follow, with you right behind me."
+📥 TTS enqueue [turn=10 sent=3 ser=None tag='']: raw="Then, I'm going to follow, with you right behind me." | speak="Then, I'm going to follow, with you right behind me."
+📤 LLM → TTS [10.4]: 'I want to see your face, I want to see your badge, and I want to see the SWAT team stand down.'
+📥 TTS enqueue [turn=10 sent=4 ser=None tag='']: raw='I want to see your face, I want to see your badge, and I want to see the SWAT team stand down.' | speak='I want to see your face, I want to see your badge, and I want to see the SWAT team stand down.'
+📤 LLM → TTS [10.5]: 'Can you make that happen, Chief?'
+📥 TTS enqueue [turn=10 sent=5 ser=None tag='']: raw='Can you make that happen, Chief?' | speak='Can you make that happen, Chief?'
+
+*** SCENARIO SUCCESS — tension stayed low. De-escalation path unlocked. ***
+
+  5%|██▎                                          | 51/1000 [00:00<00:09, 97.71it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 23.15it/s]
+🔊 TTS generate [turn=10 sent=1]: "Alright, here's what's going to happen."
+🔈 TTS playback [turn=10 sent=0]: "That's what I want to hear, Chief."
+  6%|██▍                                          | 55/1000 [00:00<00:09, 97.92it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 26.36it/s]
+🔊 TTS generate [turn=10 sent=2]: "The hostage is going to walk out of this room first, and you're going to escort them to safety."
+ 12%|█████▍                                     | 125/1000 [00:01<00:08, 106.23it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 29.02it/s]
+🔊 TTS generate [turn=10 sent=3]: "Then, I'm going to follow, with you right behind me."
+  1%|▌                                           | 12/1000 [00:00<00:08, 110.64it/s]🔈 TTS playback [turn=10 sent=1]: "Alright, here's what's going to happen."
+  7%|██▉                                         | 68/1000 [00:00<00:08, 113.94it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 30.70it/s]
+🔊 TTS generate [turn=10 sent=4]: 'I want to see your face, I want to see your badge, and I want to see the SWAT team stand down.'
+ 13%|█████▋                                     | 133/1000 [00:01<00:07, 111.80it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 25.63it/s]
+🔊 TTS generate [turn=10 sent=5]: 'Can you make that happen, Chief?'
+  5%|██                                          | 48/1000 [00:00<00:07, 122.82it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 33.99it/s]
+🔈 TTS playback [turn=10 sent=2]: "The hostage is going to walk out of this room first, and you're going to escort them to safety."
+🔈 TTS playback [turn=10 sent=3]: "Then, I'm going to follow, with you right behind me."
+🔈 TTS playback [turn=10 sent=4]: 'I want to see your face, I want to see your badge, and I want to see the SWAT team stand down.'
+🔈 TTS playback [turn=10 sent=5]: 'Can you make that happen, Chief?'
+💾 Saved TTS turn WAV: C:\AI\emotion\recordings\turn_10.wav
+
+========== PERFORMANCE ==========
+Task #10
+Models: whisper_tiny | wav2vec2_superb | openai_compat | chatterbox_turbo
+STT:              0.16s
+Emotion:          0.08s
+STT||SER wall:    0.16s  (was ~0.24s serial)
+LLM total:        1.38s
+Response Start:   2.25s  (speech end → first audio)
+TTS sent. 1:      gen 0.70s | audio 2.20s
+TTS sent. 2:      gap 0.000s | gen 0.70s | audio 2.36s
+TTS sent. 3:      gap 0.000s | gen 1.35s | audio 5.16s
+TTS sent. 4:      gap 0.002s | gen 0.73s | audio 2.88s
+TTS sent. 5:      gap 0.000s | gen 1.38s | audio 5.48s
+TTS sent. 6:      gap 0.000s | gen 0.53s | audio 2.08s
+End-to-End:       25.60s  (speech start → last audio)
+=================================
+
+🟢 SPEECH STARTED
+You seem to be using the pipelines sequentially on GPU. In order to maximize efficiency please use a dataset
+📝 You said: Yes, I can. All right. Let's get to it.
+🎙️ Voice emotion: neu (0.98)
+📉 Tension: 1/4 (bargaining, Δ-1, bargain ON)
+⏱️ OpenAI-compat generate: 1.11s
+🤖 LLM raw reply: "Alright, Chief. Let's do this. I want the hostage to take a step forward, and I want you to take a step in behind them. Then, I'm going to put down my gun, and we're going to walk out of here together. Sound like a plan, Chief?"
+📤 LLM → TTS [11.0]: 'Alright, Chief.'
+📥 TTS enqueue [turn=11 sent=0 ser='neu' tag='']: raw='Alright, Chief.' | speak='Alright, Chief.'
+📤 LLM → TTS [11.1]: "Let's do this."
+📥 TTS enqueue [turn=11 sent=1 ser=None tag='']: raw="Let's do this." | speak="Let's do this."
+📤 LLM → TTS [11.2]: 'I want the hostage to take a step forward, and I want you to take a step in behind them.'
+🔊 TTS generate [turn=11 sent=0]: 'Alright, Chief.'
+📥 TTS enqueue [turn=11 sent=2 ser=None tag='']: raw='I want the hostage to take a step forward, and I want you to take a step in behind them.' | speak='I want the hostage to take a step forward, and I want you to take a step in behind them.'
+📤 LLM → TTS [11.3]: "Then, I'm going to put down my gun, and we're going to walk out of here together."
+📥 TTS enqueue [turn=11 sent=3 ser=None tag='']: raw="Then, I'm going to put down my gun, and we're going to walk out of here together." | speak="Then, I'm going to put down my gun, and we're going to walk out of here together."
+📤 LLM → TTS [11.4]: 'Sound like a plan, Chief?'
+📥 TTS enqueue [turn=11 sent=4 ser=None tag='']: raw='Sound like a plan, Chief?' | speak='Sound like a plan, Chief?'
+
+*** SCENARIO SUCCESS — tension stayed low. De-escalation path unlocked. ***
+
+  3%|█▏                                          | 26/1000 [00:00<00:07, 127.47it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 35.10it/s]
+🔊 TTS generate [turn=11 sent=1]: "Let's do this."
+🔈 TTS playback [turn=11 sent=0]: 'Alright, Chief.'
+  3%|█▏                                          | 27/1000 [00:00<00:07, 125.73it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 33.34it/s]
+🔊 TTS generate [turn=11 sent=2]: 'I want the hostage to take a step forward, and I want you to take a step in behind them.'
+ 11%|████▌                                      | 106/1000 [00:00<00:06, 128.06it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 34.99it/s]
+🔈 TTS playback [turn=11 sent=1]: "Let's do this."
+🔊 TTS generate [turn=11 sent=3]: "Then, I'm going to put down my gun, and we're going to walk out of here together."
+ 10%|████▌                                      | 105/1000 [00:00<00:06, 130.94it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 35.25it/s]
+🔊 TTS generate [turn=11 sent=4]: 'Sound like a plan, Chief?'
+  3%|█▍                                          | 34/1000 [00:00<00:07, 128.46it/s]
+S3 Token -> Mel Inference...
+  0%|                                                         | 0/2 [00:00<?, ?it/s]🔈 TTS playback [turn=11 sent=2]: 'I want the hostage to take a step forward, and I want you to take a step in behind them.'
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 32.32it/s]
+🔈 TTS playback [turn=11 sent=3]: "Then, I'm going to put down my gun, and we're going to walk out of here together."
+🔈 TTS playback [turn=11 sent=4]: 'Sound like a plan, Chief?'
+💾 Saved TTS turn WAV: C:\AI\emotion\recordings\turn_11.wav
+
+========== PERFORMANCE ==========
+Task #11
+Models: whisper_tiny | wav2vec2_superb | openai_compat | chatterbox_turbo
+STT:              0.17s
+Emotion:          0.09s
+STT||SER wall:    0.17s  (was ~0.26s serial)
+LLM total:        1.11s
+Response Start:   1.62s  (speech end → first audio)
+TTS sent. 1:      gen 0.33s | audio 1.20s
+TTS sent. 2:      gap 0.000s | gen 0.34s | audio 1.24s
+TTS sent. 3:      gap 0.000s | gen 0.98s | audio 4.40s
+TTS sent. 4:      gap 0.000s | gen 0.95s | audio 4.36s
+TTS sent. 5:      gap 0.000s | gen 0.40s | audio 1.52s
+End-to-End:       16.88s  (speech start → last audio)
+=================================
+
+🟢 SPEECH STARTED
+📝 You said: A perfect plan. All right, let's start.
+🎙️ Voice emotion: neu (0.72)
+📉 Tension: 1/4 (bargaining, Δ-1, bargain ON)
+⏱️ OpenAI-compat generate: 1.05s
+🤖 LLM raw reply: "Alright, let's do this. *nods to the hostage* Okay, it's time. Take a step forward, and Chief, you take a step in behind them. *pauses, eyes fixed on the door* Now."
+📤 LLM → TTS [12.0]: "Alright, let's do this."
+📥 TTS enqueue [turn=12 sent=0 ser='neu' tag='']: raw="Alright, let's do this." | speak="Alright, let's do this."
+📤 LLM → TTS [12.1]: "*nods to the hostage* Okay, it's time."
+📥 TTS enqueue [turn=12 sent=1 ser=None tag='']: raw="*nods to the hostage* Okay, it's time." | speak="*nods to the hostage* Okay, it's time."
+🔊 TTS generate [turn=12 sent=0]: "Alright, let's do this."
+📤 LLM → TTS [12.2]: 'Take a step forward, and Chief, you take a step in behind them.'
+📥 TTS enqueue [turn=12 sent=2 ser=None tag='']: raw='Take a step forward, and Chief, you take a step in behind them.' | speak='Take a step forward, and Chief, you take a step in behind them.'
+📤 LLM → TTS [12.3]: '*pauses, eyes fixed on the door* Now.'
+📥 TTS enqueue [turn=12 sent=3 ser=None tag='']: raw='*pauses, eyes fixed on the door* Now.' | speak='*pauses, eyes fixed on the door* Now.'
+
+*** SCENARIO SUCCESS — tension stayed low. De-escalation path unlocked. ***
+
+  5%|██                                          | 48/1000 [00:00<00:07, 129.23it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 36.88it/s]
+🔊 TTS generate [turn=12 sent=1]: "*nods to the hostage* Okay, it's time."
+🔈 TTS playback [turn=12 sent=0]: "Alright, let's do this."
+  7%|███                                         | 71/1000 [00:00<00:07, 127.03it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 32.67it/s]
+🔊 TTS generate [turn=12 sent=2]: 'Take a step forward, and Chief, you take a step in behind them.'
+  9%|████                                        | 92/1000 [00:00<00:07, 128.22it/s]
+S3 Token -> Mel Inference...
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 35.30it/s]
+🔊 TTS generate [turn=12 sent=3]: '*pauses, eyes fixed on the door* Now.'
+  7%|██▉                                         | 67/1000 [00:00<00:07, 126.17it/s]
+S3 Token -> Mel Inference...
+  0%|                                                         | 0/2 [00:00<?, ?it/s]🔈 TTS playback [turn=12 sent=1]: "*nods to the hostage* Okay, it's time."
+100%|█████████████████████████████████████████████████| 2/2 [00:00<00:00, 31.63it/s]
+🔈 TTS playback [turn=12 sent=2]: 'Take a step forward, and Chief, you take a step in behind them.'
+🔈 TTS playback [turn=12 sent=3]: '*pauses, eyes fixed on the door* Now.'
+💾 Saved TTS turn WAV: C:\AI\emotion\recordings\turn_12.wav
+
+========== PERFORMANCE ==========
+Task #12
+Models: whisper_tiny | wav2vec2_superb | openai_compat | chatterbox_turbo
+STT:              0.15s
+Emotion:          0.08s
+STT||SER wall:    0.15s  (was ~0.23s serial)
+LLM total:        1.05s
+Response Start:   1.68s  (speech end → first audio)
+TTS sent. 1:      gen 0.48s | audio 2.08s
+TTS sent. 2:      gap 0.001s | gen 0.70s | audio 3.00s
+TTS sent. 3:      gap 0.001s | gen 0.84s | audio 3.84s
+TTS sent. 4:      gap 0.003s | gen 0.68s | audio 2.84s
+End-to-End:       15.94s  (speech start → last audio)
+=================================
