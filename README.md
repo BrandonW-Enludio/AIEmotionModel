@@ -87,7 +87,7 @@ You do **not** need to build from source. Download a **prebuilt Windows** releas
 
 llama.cpp loads **GGUF** files (not the Hugging Face safetensors used by in-process Transformers).
 
-Example — Qwen2.5-7B-Instruct Q5 (good baseline):
+Example — Meta-Llama-3.1-8B-Instruct-GGUF (good baseline):
 
 ```powershell
 pip install huggingface_hub
